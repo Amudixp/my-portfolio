@@ -9,7 +9,6 @@ import BorderGlow from '../ui/BorderGlow';
 export const Contact = () => {
   const [isSmallScreen, setIsSmallScreen] = React.useState(window.innerWidth < 768);
   const [isFlipped, setIsFlipped] = React.useState(false);
-  const [isFlipping, setIsFlipping] = React.useState(false);
   const contactSectionRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -18,17 +17,9 @@ export const Contact = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Handle border animation sync during flip
   const handleCardFlip = () => {
-    setIsFlipping(true);
     setIsFlipped(!isFlipped);
-    // Resume animation after flip completes (0.6s)
-    setTimeout(() => {
-      setIsFlipping(false);
-    }, 600);
   };
-
-
 
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },

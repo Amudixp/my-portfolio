@@ -21,8 +21,6 @@ export const About = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const techStack = ['Python', 'TypeScript', 'React', 'Node.js', 'FastAPI', 'PostgreSQL', 'Docker', 'AWS', 'Figma'];
-  
   const experiences = [
     {
       tag: '✦ LEADERSHIP',

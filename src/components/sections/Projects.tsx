@@ -1,11 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ExternalLink } from 'lucide-react';
 import { projects } from '../../data/projects';
 
 export const Projects = () => {
   const [activeSlide, setActiveSlide] = useState(0);
-  const scrollContainerRef = useRef(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isSmallScreen, setIsSmallScreen] = React.useState(window.innerWidth < 1024);
 
   React.useEffect(() => {
@@ -29,7 +29,7 @@ export const Projects = () => {
     }
   };
 
-  const scrollToSlide = (index) => {
+  const scrollToSlide = (index: number) => {
     if (scrollContainerRef.current) {
       const containerWidth = scrollContainerRef.current.clientWidth;
       scrollContainerRef.current.scrollTo({
@@ -45,7 +45,7 @@ export const Projects = () => {
   const minHeight = isSmallScreen ? '350px' : '500px';
 
   // Function to render text column
-  const TextColumn = ({ project, idx }) => (
+  const TextColumn = ({ project, idx }: any) => (
     <motion.div
       initial={{ opacity: 0, x: idx % 2 === 0 ? -40 : 40 }}
       whileInView={{ opacity: 1, x: 0 }}
@@ -98,7 +98,7 @@ export const Projects = () => {
 
       {/* Tech Stack Tags */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '4px' }}>
-        {project.tech.map((tech) => (
+        {project.tech.map((tech: any) => (
           <span
             key={tech}
             style={{
@@ -118,7 +118,7 @@ export const Projects = () => {
 
       {/* Metrics */}
       <div style={{ display: 'flex', gap: '40px', marginTop: '6px' }}>
-        {project.metrics.map((metric, midx) => (
+        {project.metrics.map((metric: any, midx: number) => (
           <motion.div
             key={midx}
             initial={{ opacity: 0, y: 10 }}
@@ -150,7 +150,7 @@ export const Projects = () => {
   );
 
   // Function to render image column
-  const ImageColumn = ({ project, idx }) => (
+  const ImageColumn = ({ project, idx }: any) => (
     <motion.div
       initial={{ opacity: 0, x: idx % 2 === 0 ? 40 : -40 }}
       whileInView={{ opacity: 1, x: 0 }}

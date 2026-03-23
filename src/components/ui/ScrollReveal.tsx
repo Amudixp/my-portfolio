@@ -26,9 +26,6 @@ const ScrollReveal: React.FC<ScrollRevealProps> = ({
   baseRotation = 3,
   blurStrength = 4,
   containerClassName = '',
-  textClassName = '',
-  rotationEnd = 'bottom bottom',
-  wordAnimationEnd = 'bottom bottom'
 }) => {
   const containerRef = useRef<HTMLHeadingElement>(null);
   

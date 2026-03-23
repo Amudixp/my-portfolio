@@ -13,11 +13,7 @@ interface BorderGlowProps {
 
 const BorderGlow: React.FC<BorderGlowProps> = ({
   children,
-  glowColor = '45 95% 50%',
-  backgroundColor = '#000000',
   borderRadius = 24,
-  colors = ['#ca8a04', '#eab308', '#fef08a'],
-  edgeSensitivity = 40,
   className = '',
   style = {},
 }) => {
