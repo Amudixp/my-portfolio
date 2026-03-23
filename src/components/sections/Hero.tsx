@@ -34,10 +34,11 @@ export const Hero = () => {
       overflow: 'hidden',
       position: 'relative',
       backgroundColor: '#000000',
-      backgroundImage: `url(${heroBg})`,
+      backgroundImage: isSmallScreen ? 'none' : `url(${heroBg})`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
-      backgroundAttachment: isSmallScreen ? 'scroll' : 'fixed'
+      backgroundAttachment: 'fixed',
+      backgroundRepeat: 'no-repeat'
     }}>
       
       {/* Dark Overlay Background */}
