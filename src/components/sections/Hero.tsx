@@ -26,7 +26,7 @@ export const Hero = () => {
 
   return (
     <section id="hero" style={{ 
-      minHeight: '100vh', 
+      minHeight: '100dvh', 
       display: 'flex', 
       alignItems: 'center', 
       justifyContent: 'center', 
@@ -37,7 +37,7 @@ export const Hero = () => {
       backgroundImage: `url(${heroBg})`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
-      backgroundAttachment: 'fixed'
+      backgroundAttachment: isSmallScreen ? 'scroll' : 'fixed'
     }}>
       
       {/* Dark Overlay Background */}
