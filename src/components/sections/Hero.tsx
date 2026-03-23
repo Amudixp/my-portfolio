@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import heroBg from '../../assets/images/hero-bg.jpg';
 
 export const Hero = () => {
   const [isSmallScreen, setIsSmallScreen] = React.useState(window.innerWidth < 1024);
@@ -20,7 +21,7 @@ export const Hero = () => {
       overflow: 'hidden',
       position: 'relative',
       backgroundColor: '#000000',
-      backgroundImage: 'url(/hero-bg.jpg)',
+      backgroundImage: `url(${heroBg})`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundAttachment: 'fixed'
