@@ -4,6 +4,19 @@ import heroBg from '../../assets/images/hero-bg.jpg';
 
 export const Hero = () => {
   const [isSmallScreen, setIsSmallScreen] = React.useState(window.innerWidth < 1024);
+  const [scrollOpacity, setScrollOpacity] = React.useState(0);
+
+  React.useEffect(() => {
+    const handleScroll = () => {
+      // Calculate opacity based on scroll position (0 to 1)
+      const scrolled = window.scrollY;
+      const opacity = Math.min(scrolled / 300, 1); // Full opacity at 300px scroll
+      setScrollOpacity(opacity);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   React.useEffect(() => {
     const handleResize = () => setIsSmallScreen(window.innerWidth < 1024);
@@ -36,12 +49,22 @@ export const Hero = () => {
         pointerEvents: 'none'
       }} />
 
+      {/* Scroll Fade-in Black Layer */}
+      <div style={{ 
+        position: 'absolute', 
+        inset: 0, 
+        zIndex: 1,
+        backgroundColor: `rgba(0, 0, 0, ${scrollOpacity * 0.6})`,
+        pointerEvents: 'none',
+        transition: 'background-color 0.1s ease-out'
+      }} />
+
       {/* Main Content Container */}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1 }}
-        style={{ maxWidth: '1400px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isSmallScreen ? '50px 20px' : '80px 60px', position: 'relative', zIndex: 2 }}
+        style={{ maxWidth: '1400px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isSmallScreen ? '50px 20px' : '80px 60px', position: 'relative', zIndex: 3 }}
       >
         
         {/* Content - Logo & Typography */}
