@@ -19,7 +19,11 @@ export const Hero = () => {
       padding: '0', 
       overflow: 'hidden',
       position: 'relative',
-      backgroundColor: '#000000'
+      backgroundColor: '#000000',
+      backgroundImage: 'url(/hero-bg.jpg.JPG)',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed'
     }}>
       
       {/* Dark Overlay Background */}
