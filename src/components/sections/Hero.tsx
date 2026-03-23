@@ -34,10 +34,10 @@ export const Hero = () => {
       overflow: 'hidden',
       position: 'relative',
       backgroundColor: '#000000',
-      backgroundImage: isSmallScreen ? 'none' : `url(${heroBg})`,
+      backgroundImage: `url(${heroBg})`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
-      backgroundAttachment: 'fixed',
+      backgroundAttachment: isSmallScreen ? 'scroll' : 'fixed',
       backgroundRepeat: 'no-repeat'
     }}>
       
