@@ -5,7 +5,7 @@ import heroBg from '../../assets/images/hero-bg.jpg';
 export const Hero = () => {
   const [isSmallScreen, setIsSmallScreen] = React.useState(window.innerWidth < 1024);
   const { scrollY } = useScroll();
-  const scrollOpacity = useTransform(scrollY, [0, 300], [0, 0.6]);
+  const scrollOpacity = useTransform(scrollY, [0, 500], [0, 1]);
 
   React.useEffect(() => {
     const handleResize = () => setIsSmallScreen(window.innerWidth < 1024);
@@ -21,41 +21,50 @@ export const Hero = () => {
       justifyContent: 'center', 
       padding: '0', 
       overflow: 'hidden',
-      position: 'relative',
-      backgroundColor: '#000000',
-      backgroundImage: `url(${heroBg})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundAttachment: 'scroll',
-      backgroundRepeat: 'no-repeat'
+      position: 'relative'
     }}>
       
-      {/* Dark Overlay Background */}
+      {/* LAYER 0: Background Image */}
       <div style={{ 
         position: 'absolute', 
         inset: 0, 
         zIndex: 0,
-        background: 'linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.7) 100%)',
+        backgroundColor: '#000000',
+        backgroundImage: `url(${heroBg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'scroll',
+        backgroundRepeat: 'no-repeat',
         pointerEvents: 'none'
       }} />
 
-      {/* Scroll Fade-in Black Layer */}
+      {/* LAYER 1: Static Dark Overlay (Base Layer for Text Readability) */}
+      <div style={{ 
+        position: 'absolute', 
+        inset: 0, 
+        zIndex: 10,
+        background: 'linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.6) 100%)',
+        pointerEvents: 'none'
+      }} />
+
+      {/* LAYER 2: Animated Scroll-to-Black Overlay */}
       <motion.div 
         style={{ 
           position: 'absolute', 
           inset: 0, 
-          zIndex: 1,
-          backgroundColor: scrollOpacity,
+          zIndex: 20,
+          background: 'rgba(0, 0, 0, 1)',
+          opacity: scrollOpacity,
           pointerEvents: 'none'
         }}
       />
 
-      {/* Main Content Container */}
+      {/* LAYER 3: Main Content Container */}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1 }}
-        style={{ maxWidth: '1400px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isSmallScreen ? '50px 20px' : '80px 60px', position: 'relative', zIndex: 3 }}
+        style={{ maxWidth: '1400px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isSmallScreen ? '50px 20px' : '80px 60px', position: 'relative', zIndex: 30 }}
       >
         
         {/* Content - Logo & Typography */}
