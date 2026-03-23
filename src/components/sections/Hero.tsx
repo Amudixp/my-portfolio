@@ -1,22 +1,11 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import heroBg from '../../assets/images/hero-bg.jpg';
 
 export const Hero = () => {
   const [isSmallScreen, setIsSmallScreen] = React.useState(window.innerWidth < 1024);
-  const [scrollOpacity, setScrollOpacity] = React.useState(0);
-
-  React.useEffect(() => {
-    const handleScroll = () => {
-      // Calculate opacity based on scroll position (0 to 1)
-      const scrolled = window.scrollY;
-      const opacity = Math.min(scrolled / 300, 1); // Full opacity at 300px scroll
-      setScrollOpacity(opacity);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  const { scrollY } = useScroll();
+  const scrollOpacity = useTransform(scrollY, [0, 300], [0, 0.6]);
 
   React.useEffect(() => {
     const handleResize = () => setIsSmallScreen(window.innerWidth < 1024);
@@ -37,7 +26,7 @@ export const Hero = () => {
       backgroundImage: `url(${heroBg})`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
-      backgroundAttachment: isSmallScreen ? 'scroll' : 'fixed',
+      backgroundAttachment: 'scroll',
       backgroundRepeat: 'no-repeat'
     }}>
       
@@ -51,14 +40,15 @@ export const Hero = () => {
       }} />
 
       {/* Scroll Fade-in Black Layer */}
-      <div style={{ 
-        position: 'absolute', 
-        inset: 0, 
-        zIndex: 1,
-        backgroundColor: `rgba(0, 0, 0, ${scrollOpacity * 0.6})`,
-        pointerEvents: 'none',
-        transition: 'background-color 0.1s ease-out'
-      }} />
+      <motion.div 
+        style={{ 
+          position: 'absolute', 
+          inset: 0, 
+          zIndex: 1,
+          backgroundColor: scrollOpacity,
+          pointerEvents: 'none'
+        }}
+      />
 
       {/* Main Content Container */}
       <motion.div 
