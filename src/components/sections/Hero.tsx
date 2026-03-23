@@ -19,18 +19,15 @@ export const Hero = () => {
       padding: '0', 
       overflow: 'hidden',
       position: 'relative',
-      backgroundImage: 'url(/hero-bg.jpg.JPG)',
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundAttachment: 'fixed'
+      backgroundColor: '#000000'
     }}>
       
-      {/* Dark Overlay - Gelap agar teks tidak silau */}
+      {/* Dark Overlay Background */}
       <div style={{ 
         position: 'absolute', 
         inset: 0, 
         zIndex: 0,
-        background: 'linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.5) 40%, rgba(0,0,0,0.8) 80%, rgba(0,0,0,0.95) 100%)',
+        background: 'linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.7) 100%)',
         pointerEvents: 'none'
       }} />
 
