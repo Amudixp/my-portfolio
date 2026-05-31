@@ -1,15 +1,9 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { skills } from '../../data/skills';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 
 export const Skills = () => {
-  const [isSmallScreen, setIsSmallScreen] = React.useState(window.innerWidth < 768);
-
-  React.useEffect(() => {
-    const handleResize = () => setIsSmallScreen(window.innerWidth < 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const isSmallScreen = useMediaQuery('(max-width: 767px)');
 
   const containerVariants = {
     hidden: { opacity: 0 },

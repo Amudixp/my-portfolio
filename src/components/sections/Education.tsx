@@ -1,19 +1,15 @@
-import React from 'react';
+import { useState, useRef } from 'react';
+import type { MouseEvent } from 'react';
 import { motion } from 'framer-motion';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 
 export const Education = () => {
-  const [isSmallScreen, setIsSmallScreen] = React.useState(window.innerWidth < 768);
-  const [mousePos, setMousePos] = React.useState({ x: 0, y: 0 });
-  const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
-  const containerRef = React.useRef<HTMLDivElement>(null);
+  const isSmallScreen = useMediaQuery('(max-width: 767px)');
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  React.useEffect(() => {
-    const handleResize = () => setIsSmallScreen(window.innerWidth < 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handleMouseMove = (e: MouseEvent) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     setMousePos({
@@ -68,8 +64,6 @@ export const Education = () => {
     }
   ];
 
-  // Debug: Log certifications data
-  console.log('Certifications loaded:', certifications);
 
   const containerVariants = {
     hidden: { opacity: 0 },

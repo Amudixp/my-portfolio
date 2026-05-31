@@ -1,21 +1,16 @@
-import React from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Linkedin, Github } from 'lucide-react';
 import { profile } from '../../data/profile';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import profileImage from '../../assets/images/profil.jpg';
 import qrLinkedin from '../../assets/images/qr-linkedin.png';
 import BorderGlow from '../ui/BorderGlow';
 
 export const Contact = () => {
-  const [isSmallScreen, setIsSmallScreen] = React.useState(window.innerWidth < 768);
-  const [isFlipped, setIsFlipped] = React.useState(false);
-  const contactSectionRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    const handleResize = () => setIsSmallScreen(window.innerWidth < 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const isSmallScreen = useMediaQuery('(max-width: 767px)');
+  const [isFlipped, setIsFlipped] = useState(false);
+  const contactSectionRef = useRef<HTMLDivElement>(null);
 
   const handleCardFlip = () => {
     setIsFlipped(!isFlipped);
@@ -91,7 +86,7 @@ export const Contact = () => {
             transition={{ duration: 0.6 }}>
             
             {/* Massive Typography */}
-            <h1 style={{
+            <h2 style={{
               fontSize: isSmallScreen ? 'clamp(24px, 6vw, 32px)' : '56px',
               fontWeight: '900',
               color: '#FFFFFF',
@@ -105,7 +100,7 @@ export const Contact = () => {
               SOLUTIONS
               <br />
               TOGETHER.
-            </h1>
+            </h2>
 
             {/* Description */}
             <p style={{
@@ -346,6 +341,7 @@ export const Contact = () => {
                       <img
                         src={profileImage}
                         alt="Amudi Purba"
+                        loading="lazy"
                         style={{
                           width: '100%',
                           height: '100%',
@@ -382,6 +378,7 @@ export const Contact = () => {
                       <img
                         src={qrLinkedin}
                         alt="LinkedIn QR Code"
+                        loading="lazy"
                         style={{
                           width: '160px',
                           height: '160px',
@@ -511,6 +508,7 @@ export const Contact = () => {
                       <img
                         src={profileImage}
                         alt="Amudi Purba"
+                        loading="lazy"
                         style={{
                           width: '100%',
                           height: '100%',
@@ -546,6 +544,7 @@ export const Contact = () => {
                       <img
                         src={qrLinkedin}
                         alt="LinkedIn QR Code"
+                        loading="lazy"
                         style={{
                           width: '120px',
                           height: '120px',

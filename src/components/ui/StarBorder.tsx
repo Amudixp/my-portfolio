@@ -30,7 +30,7 @@ const StarBorder = <T extends React.ElementType = 'div'>({
       style={{
         borderRadius,
       }}
-      {...(rest as any)}
+      {...(rest as Record<string, unknown>)}
     >
       {/* Outer animated border - Bottom glow */}
       <div

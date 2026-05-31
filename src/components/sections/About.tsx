@@ -1,6 +1,7 @@
-import React from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { profile } from '../../data/profile';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import ScrollReveal from '../ui/ScrollReveal';
 import tecRecruitment from '../../assets/images/aboutme/tec-recruitment.jpeg';
 import tecComvis from '../../assets/images/aboutme/tec-comvis.jpeg';
@@ -12,14 +13,8 @@ import itbAsprak from '../../assets/images/aboutme/itb-asprak.jpeg';
 import inkamOskm from '../../assets/images/aboutme/inkam-oskm.JPG?url';
 
 export const About = () => {
-  const [activeSlide, setActiveSlide] = React.useState(0);
-  const [isSmallScreen, setIsSmallScreen] = React.useState(window.innerWidth < 1024);
-
-  React.useEffect(() => {
-    const handleResize = () => setIsSmallScreen(window.innerWidth < 1024);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const isSmallScreen = useMediaQuery('(max-width: 1023px)');
 
   const experiences = [
     {
@@ -112,6 +107,9 @@ export const About = () => {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
+            role="region"
+            aria-label="Activity carousel"
+            aria-roledescription="carousel"
             style={{
               backgroundColor: '#111111',
               boxShadow: 'inset 0 0 0 1px rgba(234, 179, 8, 0.2)',
@@ -129,6 +127,7 @@ export const About = () => {
             <div style={{ position: 'absolute', top: '20px', right: '20px', zIndex: 10, display: 'flex', gap: '10px' }}>
               <button
                 onClick={() => setActiveSlide((prev) => (prev - 1 + experiences.length) % experiences.length)}
+                aria-label={`Previous slide (currently showing ${activeSlide + 1} of ${experiences.length})`}
                 style={{
                   width: isSmallScreen ? '36px' : '40px',
                   height: isSmallScreen ? '36px' : '40px',
@@ -149,6 +148,7 @@ export const About = () => {
               </button>
               <button
                 onClick={() => setActiveSlide((prev) => (prev + 1) % experiences.length)}
+                aria-label={`Next slide (currently showing ${activeSlide + 1} of ${experiences.length})`}
                 style={{
                   width: isSmallScreen ? '36px' : '40px',
                   height: isSmallScreen ? '36px' : '40px',
@@ -216,17 +216,22 @@ export const About = () => {
                 </div>
 
                 {/* Pagination Dots */}
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '8px' }}>
-                  {experiences.map((_, index) => (
-                    <div
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '8px' }} role="tablist" aria-label="Activity slides">
+                  {experiences.map((exp, index) => (
+                    <button
                       key={index}
+                      role="tab"
+                      aria-selected={index === activeSlide}
+                      aria-label={`Go to slide ${index + 1}: ${exp.title}`}
                       style={{
                         width: index === activeSlide ? '24px' : '6px',
                         height: '6px',
                         backgroundColor: index === activeSlide ? '#EAB308' : '#555555',
                         borderRadius: '3px',
                         transition: 'all 0.3s',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        border: 'none',
+                        padding: 0,
                       }}
                       onClick={() => setActiveSlide(index)}
                     />

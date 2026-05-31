@@ -1,20 +1,13 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ExternalLink } from 'lucide-react';
 import { projects } from '../../data/projects';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 
 export const Projects = () => {
   const [activeSlide, setActiveSlide] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [isSmallScreen, setIsSmallScreen] = React.useState(window.innerWidth < 1024);
-
-  React.useEffect(() => {
-    const handleResize = () => {
-      setIsSmallScreen(window.innerWidth < 1024);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const isSmallScreen = useMediaQuery('(max-width: 1023px)');
 
 
 
@@ -45,7 +38,7 @@ export const Projects = () => {
   const minHeight = isSmallScreen ? '350px' : '500px';
 
   // Function to render text column
-  const TextColumn = ({ project, idx }: any) => (
+  const TextColumn = ({ project, idx }: { project: typeof projects[number]; idx: number }) => (
     <motion.div
       initial={{ opacity: 0, x: idx % 2 === 0 ? -40 : 40 }}
       whileInView={{ opacity: 1, x: 0 }}
@@ -98,7 +91,7 @@ export const Projects = () => {
 
       {/* Tech Stack Tags */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '4px' }}>
-        {project.tech.map((tech: any) => (
+        {project.tech.map((tech) => (
           <span
             key={tech}
             style={{
@@ -118,7 +111,7 @@ export const Projects = () => {
 
       {/* Metrics */}
       <div style={{ display: 'flex', gap: '40px', marginTop: '6px' }}>
-        {project.metrics.map((metric: any, midx: number) => (
+        {project.metrics.map((metric, midx) => (
           <motion.div
             key={midx}
             initial={{ opacity: 0, y: 10 }}
@@ -150,7 +143,7 @@ export const Projects = () => {
   );
 
   // Function to render image column
-  const ImageColumn = ({ project, idx }: any) => (
+  const ImageColumn = ({ project, idx }: { project: typeof projects[number]; idx: number }) => (
     <motion.div
       initial={{ opacity: 0, x: idx % 2 === 0 ? 40 : -40 }}
       whileInView={{ opacity: 1, x: 0 }}
@@ -181,6 +174,7 @@ export const Projects = () => {
         <img 
           src={project.image} 
           alt={project.title}
+          loading="lazy"
           className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
           style={{
             backgroundColor: '#0a0a0a'
@@ -288,10 +282,13 @@ export const Projects = () => {
           </div>
 
           {/* Pagination Dots */}
-          <div style={{ display: 'flex', gap: '12px' }}>
-            {projects.map((_, idx) => (
+          <div style={{ display: 'flex', gap: '12px' }} role="tablist" aria-label="Project slides">
+            {projects.map((project, idx) => (
               <button
                 key={idx}
+                role="tab"
+                aria-selected={activeSlide === idx}
+                aria-label={`Go to project ${idx + 1}: ${project.title}`}
                 onClick={() => scrollToSlide(idx)}
                 style={{
                   width: activeSlide === idx ? '28px' : '6px',
@@ -300,7 +297,8 @@ export const Projects = () => {
                   backgroundColor: activeSlide === idx ? '#EAB308' : '#444444',
                   border: 'none',
                   cursor: 'pointer',
-                  transition: 'all 0.4s ease'
+                  transition: 'all 0.4s ease',
+                  padding: 0,
                 }}
                 onMouseEnter={(e) => {
                   if (activeSlide !== idx) e.currentTarget.style.backgroundColor = '#666666';

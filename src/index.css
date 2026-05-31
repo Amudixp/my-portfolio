@@ -30,3 +30,15 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #CA8A04; /* darker gold */
 }
+
+/* Hero loading shimmer animation */
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Focus-visible styles for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid #EAB308;
+  outline-offset: 2px;
+}

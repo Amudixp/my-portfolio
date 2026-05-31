@@ -1,17 +1,13 @@
-import React from 'react';
+import { useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import heroBg from '../../assets/images/hero-bg.jpg';
 
 export const Hero = () => {
-  const [isSmallScreen, setIsSmallScreen] = React.useState(window.innerWidth < 1024);
+  const isSmallScreen = useMediaQuery('(max-width: 1023px)');
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
   const { scrollY } = useScroll();
   const scrollOpacity = useTransform(scrollY, [0, 500], [0, 1]);
-
-  React.useEffect(() => {
-    const handleResize = () => setIsSmallScreen(window.innerWidth < 1024);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   return (
     <section id="hero" style={{ 
@@ -24,19 +20,43 @@ export const Hero = () => {
       position: 'relative'
     }}>
       
-      {/* LAYER 0: Background Image */}
+      {/* LAYER 0: Background Image with loading state */}
       <div style={{ 
         position: 'absolute', 
         inset: 0, 
         zIndex: 0,
         backgroundColor: '#000000',
-        backgroundImage: `url(${heroBg})`,
+        backgroundImage: isImageLoaded ? `url(${heroBg})` : 'none',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'scroll',
         backgroundRepeat: 'no-repeat',
-        pointerEvents: 'none'
+        pointerEvents: 'none',
+        transition: 'opacity 0.8s ease-in-out',
+        opacity: isImageLoaded ? 1 : 0,
       }} />
+      
+      {/* Hidden img element to detect when background loads */}
+      <img
+        src={heroBg}
+        alt=""
+        aria-hidden="true"
+        onLoad={() => setIsImageLoaded(true)}
+        style={{ display: 'none' }}
+      />
+
+      {/* Loading shimmer (visible before image loads) */}
+      {!isImageLoaded && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 0,
+          background: 'linear-gradient(110deg, #0a0a0a 30%, #1a1a1a 50%, #0a0a0a 70%)',
+          backgroundSize: '200% 100%',
+          animation: 'shimmer 1.5s infinite',
+          pointerEvents: 'none',
+        }} />
+      )}
 
       {/* LAYER 1: Static Dark Overlay (Base Layer for Text Readability) */}
       <div style={{ 
