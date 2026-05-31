@@ -9,7 +9,7 @@ export const profile = {
   linkedin: "https://www.linkedin.com/in/amudipurba",
   gpa: "3.58 / 4.00",
   shortBio: "Saya adalah mahasiswa tingkat tiga Sistem dan Teknologi Informasi di ITB dengan ketertarikan kuat di bidang data dan artificial intelligence. Berpengalaman dalam pemecahan masalah berbasis data, membangun solusi terstruktur, dan berkolaborasi lintas tim teknis maupun non-teknis.",
-  resume: "/assets/CV-Amudi Purba.pdf"
+  resume: "/assets/Amudi Purba_CV.pdf"
 };
 
 export const education = {
