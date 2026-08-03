@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/react';
 import { Navbar } from './components/common/Navbar';
 import { Footer } from './components/common/Footer';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
@@ -88,6 +89,7 @@ function App() {
   return (
     <ThemeProvider>
       <MainAppContent />
+      <Analytics />
     </ThemeProvider>
   );
 }
