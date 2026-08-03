@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useMemo } from 'react';
-import type { ReactNode, RefObject } from 'react';
+import type { ReactNode, RefObject, CSSProperties } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -14,20 +14,20 @@ interface ScrollRevealProps {
   blurStrength?: number;
   containerClassName?: string;
   textClassName?: string;
-  rotationEnd?: string;
-  wordAnimationEnd?: string;
+  style?: CSSProperties;
 }
 
 const ScrollReveal: React.FC<ScrollRevealProps> = ({
   children,
   scrollContainerRef,
   enableBlur = true,
-  baseOpacity = 0.1,
-  baseRotation = 3,
+  baseOpacity = 0.15,
+  baseRotation = 1,
   blurStrength = 4,
   containerClassName = '',
+  style = {}
 }) => {
-  const containerRef = useRef<HTMLHeadingElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const splitText = useMemo(() => {
     const text = typeof children === 'string' ? children : '';
@@ -40,7 +40,7 @@ const ScrollReveal: React.FC<ScrollRevealProps> = ({
           style={{
             display: 'inline-block',
             opacity: baseOpacity,
-            color: '#ffffff',
+            color: 'inherit',
             filter: enableBlur ? `blur(${blurStrength}px)` : 'blur(0px)',
             transition: 'none'
           }}
@@ -67,8 +67,8 @@ const ScrollReveal: React.FC<ScrollRevealProps> = ({
         scrollTrigger: {
           trigger: el,
           scroller,
-          start: 'top 80%',
-          end: 'top 30%',
+          start: 'top 85%',
+          end: 'top 35%',
           scrub: 0.5,
           markers: false
         }
@@ -89,8 +89,8 @@ const ScrollReveal: React.FC<ScrollRevealProps> = ({
         scrollTrigger: {
           trigger: el,
           scroller,
-          start: 'top 80%',
-          end: 'top 20%',
+          start: 'top 85%',
+          end: 'top 30%',
           scrub: 0.5,
           markers: false
         }
@@ -110,8 +110,8 @@ const ScrollReveal: React.FC<ScrollRevealProps> = ({
           scrollTrigger: {
             trigger: el,
             scroller,
-            start: 'top 80%',
-            end: 'top 20%',
+            start: 'top 85%',
+            end: 'top 30%',
             scrub: 0.5,
             markers: false
           }
@@ -125,20 +125,21 @@ const ScrollReveal: React.FC<ScrollRevealProps> = ({
   }, [scrollContainerRef, enableBlur, baseRotation, baseOpacity, blurStrength]);
 
   return (
-    <h2 
+    <div 
       ref={containerRef} 
       className={containerClassName}
       style={{
-        fontSize: 'clamp(1.8rem, 4vw, 2.5rem)',
-        lineHeight: '1.5',
-        fontWeight: '600',
-        color: '#ffffff',
-        margin: '20px 0',
-        wordBreak: 'break-word'
+        fontSize: 'inherit',
+        lineHeight: '1.7',
+        fontWeight: '500',
+        color: 'inherit',
+        margin: '0',
+        wordBreak: 'break-word',
+        ...style
       }}
     >
-      <p style={{ margin: 0, color: '#A3A3A3' }}>{splitText}</p>
-    </h2>
+      <p style={{ margin: 0, color: 'inherit' }}>{splitText}</p>
+    </div>
   );
 };
 

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Mail, Linkedin, Github } from 'lucide-react';
 import { profile } from '../../data/profile';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { useTheme } from '../../context/ThemeContext';
 import profileImage from '../../assets/images/profil.jpg';
 import qrLinkedin from '../../assets/images/qr-linkedin.png';
 import BorderGlow from '../ui/BorderGlow';
@@ -11,6 +12,8 @@ export const Contact = () => {
   const isSmallScreen = useMediaQuery('(max-width: 767px)');
   const [isFlipped, setIsFlipped] = useState(false);
   const contactSectionRef = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
 
   const handleCardFlip = () => {
     setIsFlipped(!isFlipped);
@@ -38,13 +41,13 @@ export const Contact = () => {
   };
 
   return (
-    <section id="contact" ref={contactSectionRef} style={{ padding: isSmallScreen ? '60px 16px' : '90px 40px', backgroundColor: '#000000', display: 'flex', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
+    <section id="contact" ref={contactSectionRef} style={{ padding: isSmallScreen ? '60px 16px' : '90px 40px', backgroundColor: isLight ? '#F8FAFC' : '#000000', display: 'flex', alignItems: 'center', position: 'relative', overflow: 'hidden', transition: 'background-color 0.3s ease' }}>
       {/* Background Decorative Elements */}
       {!isSmallScreen && (
       <svg style={{ position: 'absolute', top: '0', right: '0', opacity: 0.05, width: '400px', height: '400px', pointerEvents: 'none' }} viewBox="0 0 200 200">
         <defs>
           <linearGradient id="codeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#EAB308" />
+            <stop offset="0%" stopColor={isLight ? '#D97706' : '#EAB308'} />
             <stop offset="100%" stopColor="#d4a000" />
           </linearGradient>
         </defs>
@@ -65,10 +68,10 @@ export const Contact = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
           style={{ marginBottom: '80px', textAlign: 'center' }}>
-          <h2 style={{ fontSize: isSmallScreen ? 'clamp(28px, 6vw, 32px)' : '48px', fontWeight: '900', color: '#FFFFFF', margin: '0 0 20px 0', fontFamily: 'Poppins, sans-serif' }}>
+          <h2 style={{ fontSize: isSmallScreen ? 'clamp(28px, 6vw, 32px)' : '48px', fontWeight: '900', color: isLight ? '#0F172A' : '#FFFFFF', margin: '0 0 20px 0', fontFamily: 'Poppins, sans-serif' }}>
             Get In Touch.
           </h2>
-          <div style={{ width: '80px', height: '4px', backgroundColor: '#EAB308', borderRadius: '2px', margin: '0 auto' }} />
+          <div style={{ width: '80px', height: '4px', backgroundColor: isLight ? '#D97706' : '#EAB308', borderRadius: '2px', margin: '0 auto' }} />
         </motion.div>
 
         {/* Main Grid Layout */}
@@ -89,7 +92,7 @@ export const Contact = () => {
             <h2 style={{
               fontSize: isSmallScreen ? 'clamp(24px, 6vw, 32px)' : '56px',
               fontWeight: '900',
-              color: '#FFFFFF',
+              color: isLight ? '#0F172A' : '#FFFFFF',
               fontFamily: 'Poppins, sans-serif',
               lineHeight: '1.1',
               marginBottom: '40px',
@@ -104,14 +107,14 @@ export const Contact = () => {
 
             {/* Description */}
             <p style={{
-              color: '#A3A3A3',
+              color: isLight ? '#475569' : '#A3A3A3',
               fontSize: isSmallScreen ? '14px' : '16px',
               lineHeight: '1.8',
               marginBottom: '40px',
               fontFamily: 'system-ui, -apple-system, sans-serif',
               textAlign: isSmallScreen ? 'center' : 'left'
             }}>
-              Saya selalu terbuka untuk diskusi mengenai peluang magang Data/AI, proyek kolaborasi, atau sekadar menyapa. Kotak masuk saya selalu terbuka!
+              Saya selalu terbuka untuk diskusi mengenai peluang magang Data/AI and Engineering, proyek kolaborasi, atau sekadar menyapa. Kotak masuk saya selalu terbuka!
             </p>
 
             {/* Primary CTA */}

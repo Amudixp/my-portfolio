@@ -1,22 +1,28 @@
-export const skills = [
+import type { SkillCategory } from '../types';
+
+export const skills: SkillCategory[] = [
   {
     category: "Languages",
-    items: ["Python", "TypeScript", "JavaScript", "Java", "C", "HTML", "CSS"]
+    items: ["TypeScript", "JavaScript", "Python", "Java", "C", "PHP", "Haskell"]
   },
   {
-    category: "Frameworks & Libraries",
-    items: ["React", "React Native", "Node.js", "FastAPI", "Tailwind CSS"]
+    category: "Frontend",
+    items: ["React", "React Native", "NextJS", "Expo", "HTML", "CSS", "Tailwind CSS", "JavaFX"]
   },
   {
-    category: "Databases",
-    items: ["PostgreSQL", "MySQL"]
+    category: "Backend",
+    items: ["FastAPI", "Node.js", "Express.js", "RESTful API", "JWT", "Supabase"]
   },
   {
-    category: "Cloud & DevOps",
-    items: ["Docker", "AWS", "GitHub Actions", "Microservices"]
+    category: "Database",
+    items: ["PostgreSQL", "MySQL", "Schema Design", "Query Optimization", "Relational Modelling"]
   },
   {
-    category: "Tools",
-    items: ["Git", "Agile", "GitHub Copilot", "Figma"]
+    category: "DevOps & Tools",
+    items: ["Git", "GitHub", "Docker", "Postman", "Swagger", "Cloudflare", "Version Control Workflows"]
+  },
+  {
+    category: "AI/ML Integration",
+    items: ["YOLOv8", "scikit-learn", "LLM API Integration", "AI-as-a-Service"]
   }
 ];

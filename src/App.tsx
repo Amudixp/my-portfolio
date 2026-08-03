@@ -8,11 +8,24 @@ import { Projects } from './components/sections/Projects';
 import { Experience } from './components/sections/Experience';
 import { Education } from './components/sections/Education';
 import { Contact } from './components/sections/Contact';
+import { useMediaQuery } from './hooks/useMediaQuery';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 
-function App() {
+function MainAppContent() {
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
+  const { theme } = useTheme();
+
   return (
-    <div style={{ backgroundColor: '#000000', color: '#FFFFFF', fontFamily: 'sans-serif', overflowX: 'hidden', width: '100%', maxWidth: '100vw' }}>
-      {/* Skip to Content — Accessibility: lets keyboard users jump past the navbar */}
+    <div style={{ 
+      backgroundColor: theme === 'light' ? '#F8FAFC' : '#000000', 
+      color: theme === 'light' ? '#0F172A' : '#FFFFFF', 
+      fontFamily: 'sans-serif', 
+      overflowX: 'hidden', 
+      width: '100%', 
+      maxWidth: '100vw',
+      transition: 'background-color 0.3s ease, color 0.3s ease'
+    }}>
+      {/* Skip to Content — Accessibility */}
       <a
         href="#main-content"
         style={{
@@ -36,7 +49,16 @@ function App() {
       </a>
 
       <Navbar />
-      <main id="main-content" style={{ paddingTop: '80px', overflowX: 'hidden', width: '100%', maxWidth: '100vw' }}>
+
+      <main 
+        id="main-content" 
+        style={{ 
+          paddingLeft: '0px', 
+          paddingTop: isDesktop ? '0px' : '65px', 
+          overflowX: 'hidden', 
+          width: '100%', 
+          boxSizing: 'border-box'
+        }}>
         <ErrorBoundary>
           <Hero />
         </ErrorBoundary>
@@ -55,10 +77,18 @@ function App() {
         <ErrorBoundary>
           <Contact />
         </ErrorBoundary>
+        <Footer />
       </main>
-      <Footer />
       <ScrollToTop />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <MainAppContent />
+    </ThemeProvider>
   );
 }
 

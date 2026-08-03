@@ -5,10 +5,12 @@ export interface ProfileData {
   location: string;
   status: string;
   email: string;
+  phone: string;
   github: string;
   linkedin: string;
   gpa: string;
   shortBio: string;
+  resume?: string;
 }
 
 export interface SkillCategory {
@@ -19,23 +21,41 @@ export interface SkillCategory {
 export interface ProjectData {
   id: number;
   title: string;
+  subtitle: string;
   year: string;
   description: string;
+  fullDescription?: string;
   tech: string[];
+  image?: string;
   link?: string;
+  metrics: { value: string; label: string }[];
 }
 
 export interface ExperienceData {
   id: number;
-  role: string;
+  year: string;
+  title: string;
   organization: string;
-  period: string;
+  description: string;
+  tags: string[];
+  logoImagePath?: string;
+  logoColor?: string;
 }
 
 export interface CertificationData {
-  id: number;
-  name: string;
+  id: string | number;
+  title: string;
+  issuer?: string;
   date: string;
+  link?: string;
+}
+
+export interface AwardData {
+  id: number;
+  title: string;
+  year: string;
+  description?: string;
+  tag?: string;
 }
 
 export interface EducationData {
@@ -43,5 +63,8 @@ export interface EducationData {
   institution: string;
   period: string;
   gpa: string;
+  credits: string;
+  relevantCourseworks: string[];
   certifications: CertificationData[];
+  awards: AwardData[];
 }

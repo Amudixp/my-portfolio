@@ -1,28 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { User, Briefcase, FolderGit2, GraduationCap, Send, Sun, Moon } from 'lucide-react';
+import { profile } from '../../data/profile';
+import { useTheme } from '../../context/ThemeContext';
+import sidebarProfile from '../../assets/images/sidebar-profile.jpeg';
 
 const navLinks = [
-  { name: 'About', href: '#about' },
-  { name: 'Experience', href: '#experience' },
-  { name: 'Projects', href: '#projects' },
-  { name: 'Certifications', href: '#education' },
+  { name: 'About', href: '#about', icon: User },
+  { name: 'Experience', href: '#experience', icon: Briefcase },
+  { name: 'Projects', href: '#projects', icon: FolderGit2 },
+  { name: 'Certifications', href: '#education', icon: GraduationCap },
+  { name: 'Contact', href: '#contact', icon: Send },
 ];
 
 export const Navbar = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState('');
-  const isSmallScreen = useMediaQuery('(max-width: 767px)');
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
+  const [isSidebarFocused, setIsSidebarFocused] = useState(false);
+  const [activeSection, setActiveSection] = useState('#hero');
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
+  const { theme, toggleTheme } = useTheme();
+  const isLight = theme === 'light';
+  const isSidebarExpanded = isSidebarHovered || isSidebarFocused;
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Active section tracking via IntersectionObserver
-  useEffect(() => {
-    const sectionIds = ['about', 'experience', 'projects', 'education', 'contact'];
+    const sectionIds = ['hero', 'about', 'experience', 'projects', 'education', 'contact'];
     const observers: IntersectionObserver[] = [];
 
     sectionIds.forEach((id) => {
@@ -31,213 +33,293 @@ export const Navbar = () => {
 
       const observer = new IntersectionObserver(
         ([entry]) => {
-          if (entry.isIntersecting) {
-            setActiveSection(`#${id}`);
-          }
+          if (entry.isIntersecting) setActiveSection(`#${id}`);
         },
-        { threshold: 0.3, rootMargin: '-80px 0px -40% 0px' }
+        { threshold: 0.25 }
       );
+
       observer.observe(element);
       observers.push(observer);
     });
 
-    return () => observers.forEach((obs) => obs.disconnect());
+    return () => observers.forEach((observer) => observer.disconnect());
   }, []);
-
-  // Close menu when clicking on a link
-  const handleLinkClick = () => {
-    setIsOpen(false);
-  };
 
   const isActiveLink = (href: string) => activeSection === href;
 
-  return (
-    <nav style={{
-      position: 'fixed',
-      width: isSmallScreen ? '100%' : isScrolled ? 'calc(100% - 60px)' : '100%',
-      top: isSmallScreen ? '0' : isScrolled ? '20px' : '0',
-      left: isSmallScreen ? '0' : isScrolled ? '30px' : '0',
-      right: isSmallScreen ? '0' : isScrolled ? '30px' : 'auto',
-      zIndex: 9999,
-      backgroundColor: isSmallScreen ? '#000000' : isScrolled ? '#000000' : 'rgba(0, 0, 0, 0)',
-      backdropFilter: isSmallScreen ? 'none' : isScrolled ? 'blur(10px)' : 'none',
-      borderRadius: isSmallScreen ? '0px' : isScrolled ? '12px' : '0px',
-      border: isSmallScreen ? 'none' : isScrolled ? '1px solid rgba(234, 179, 8, 0.3)' : 'none',
-      boxShadow: isSmallScreen ? 'none' : isScrolled ? '0 10px 30px rgba(0, 0, 0, 0.8)' : 'none',
-      padding: isSmallScreen ? '20px' : isScrolled ? '15px 30px' : '25px 30px',
-      transition: 'all 0.3s ease',
-      willChange: 'background-color'
-    }}
-    role="navigation"
-    aria-label="Main navigation"
-    >
-      <div style={{ maxWidth: '1200px', margin: '0 auto', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <a href="#" style={{ fontSize: isSmallScreen ? '20px' : '24px', fontWeight: 'bold', color: '#EAB308', textDecoration: 'none', flexShrink: 0 }} aria-label="Back to top">
-          AP.
+  if (isDesktop) {
+    return (
+      <aside
+        role="navigation"
+        aria-label="Primary navigation"
+        onMouseEnter={() => setIsSidebarHovered(true)}
+        onMouseLeave={() => setIsSidebarHovered(false)}
+        onFocusCapture={() => setIsSidebarFocused(true)}
+        onBlurCapture={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) {
+            setIsSidebarFocused(false);
+          }
+        }}
+        style={{
+          position: 'fixed',
+          top: '50%',
+          left: '18px',
+          transform: 'translateY(-50%)',
+          width: isSidebarExpanded ? '168px' : '62px',
+          padding: isSidebarExpanded ? '14px 12px' : '12px 9px',
+          zIndex: 9999,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'stretch',
+          backgroundColor: isLight ? '#FFFFFF' : '#0A0A0A',
+          border: isLight ? '1px solid #E2E8F0' : '1px solid #27272A',
+          borderRadius: '14px',
+          boxShadow: isLight ? '0 10px 28px rgba(0, 0, 0, 0.08)' : '0 10px 28px rgba(0, 0, 0, 0.45)',
+          boxSizing: 'border-box',
+          overflow: 'hidden',
+          transition: 'width 220ms ease, padding 220ms ease, background-color 0.3s ease, border-color 0.3s ease'
+        }}
+      >
+        <a
+          href="#hero"
+          aria-label="Back to top"
+          title="Back to top"
+          style={{
+            width: '100%',
+            height: '42px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: isSidebarExpanded ? 'flex-start' : 'center',
+            paddingLeft: isSidebarExpanded ? '10px' : '0',
+            gap: isSidebarExpanded ? '10px' : '0',
+            color: '#EAB308',
+            fontFamily: 'Poppins, sans-serif',
+            fontSize: '18px',
+            fontWeight: 900,
+            letterSpacing: '-1px',
+            textDecoration: 'none'
+          }}
+        >
+          <img
+            src={sidebarProfile}
+            alt=""
+            style={{
+              width: '34px',
+              height: '34px',
+              flexShrink: 0,
+              borderRadius: '8px',
+              border: '1px solid rgba(234, 179, 8, 0.55)',
+              objectFit: 'cover',
+              objectPosition: '50% 38%'
+            }}
+          />
+          <span style={{
+            maxWidth: isSidebarExpanded ? '100px' : '0',
+            opacity: isSidebarExpanded ? 1 : 0,
+            overflow: 'hidden',
+            color: isLight ? '#0F172A' : '#F4F4F5',
+            fontSize: '12px',
+            fontWeight: 700,
+            letterSpacing: 0,
+            whiteSpace: 'nowrap',
+            transition: 'max-width 180ms ease, opacity 140ms ease'
+          }}>
+            {profile.name}
+          </span>
         </a>
 
-        {/* Desktop Nav Links - Centered */}
-        {!isSmallScreen && (
-          <div style={{ display: 'flex', gap: '40px', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-            {navLinks.map((link) => (
-              <a 
-                key={link.name} 
-                href={link.href} 
-                style={{ 
-                  color: isActiveLink(link.href) ? '#EAB308' : '#FFFFFF', 
-                  textDecoration: 'none',
-                  fontSize: '14px',
-                  fontWeight: isActiveLink(link.href) ? '700' : '500',
-                  transition: 'color 0.2s',
-                  whiteSpace: 'nowrap',
+        <div style={{ width: '100%', height: '1px', margin: '8px 0 12px', backgroundColor: isLight ? '#E2E8F0' : '#27272A' }} />
+
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+          {navLinks.map((link) => {
+            const Icon = link.icon;
+            const active = isActiveLink(link.href);
+
+            return (
+              <a
+                key={link.name}
+                href={link.href}
+                aria-label={link.name}
+                aria-current={active ? 'page' : undefined}
+                title={link.name}
+                style={{
                   position: 'relative',
+                  width: '100%',
+                  height: '42px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: isSidebarExpanded ? 'flex-start' : 'center',
+                  gap: isSidebarExpanded ? '11px' : '0',
+                  padding: isSidebarExpanded ? '0 11px' : '0',
+                  color: active ? (isLight ? '#D97706' : '#EAB308') : (isLight ? '#64748B' : '#A1A1AA'),
+                  backgroundColor: active ? (isLight ? 'rgba(217, 119, 6, 0.1)' : 'rgba(234, 179, 8, 0.08)') : 'transparent',
+                  borderRadius: '8px',
+                  textDecoration: 'none',
+                  transition: 'color 160ms ease, background-color 160ms ease'
                 }}
-                onMouseEnter={(e) => (e.currentTarget as HTMLAnchorElement).style.color = '#EAB308'}
-                onMouseLeave={(e) => {
-                  if (!isActiveLink(link.href)) {
-                    (e.currentTarget as HTMLAnchorElement).style.color = '#FFFFFF';
+                onMouseEnter={(event) => {
+                  if (!active) {
+                    event.currentTarget.style.color = isLight ? '#0F172A' : '#F4F4F5';
+                    event.currentTarget.style.backgroundColor = isLight ? '#F1F5F9' : '#18181B';
+                  }
+                }}
+                onMouseLeave={(event) => {
+                  if (!active) {
+                    event.currentTarget.style.color = isLight ? '#64748B' : '#A1A1AA';
+                    event.currentTarget.style.backgroundColor = 'transparent';
                   }
                 }}
               >
-                {link.name}
-                {/* Active indicator dot */}
-                {isActiveLink(link.href) && (
-                  <span style={{
-                    position: 'absolute',
-                    bottom: '-8px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    width: '4px',
-                    height: '4px',
-                    borderRadius: '50%',
-                    backgroundColor: '#EAB308',
-                  }} />
+                {active && (
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      position: 'absolute',
+                      left: isSidebarExpanded ? '-12px' : '-9px',
+                      width: '2px',
+                      height: '20px',
+                      borderRadius: '0 2px 2px 0',
+                      backgroundColor: isLight ? '#D97706' : '#EAB308'
+                    }}
+                  />
                 )}
+                <Icon size={19} strokeWidth={1.8} />
+                <span style={{
+                  maxWidth: isSidebarExpanded ? '100px' : '0',
+                  opacity: isSidebarExpanded ? 1 : 0,
+                  overflow: 'hidden',
+                  whiteSpace: 'nowrap',
+                  fontSize: '12.5px',
+                  fontWeight: active ? 700 : 500,
+                  letterSpacing: '0.1px',
+                  transition: 'max-width 180ms ease, opacity 140ms ease'
+                }}>
+                  {link.name}
+                </span>
               </a>
-            ))}
-          </div>
-        )}
+            );
+          })}
+        </nav>
 
-        {/* Desktop Contact Button */}
-        {!isSmallScreen && (
-          <div style={{ flexShrink: 0 }}>
-            <a 
-              href="#contact" 
-              style={{ 
-                backgroundColor: '#EAB308', 
-                color: '#000000', 
-                padding: '10px 20px',
-                borderRadius: '6px',
-                textDecoration: 'none',
-                fontWeight: 'bold',
-                fontSize: '13px',
-                transition: 'all 0.2s',
-                cursor: 'pointer',
-                display: 'inline-block'
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 6px 16px rgba(234, 179, 8, 0.5)';
-                (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-2px)';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLAnchorElement).style.boxShadow = 'none';
-                (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0)';
-              }}
-            >
-              Contact
-            </a>
-          </div>
-        )}
+        {/* Theme Toggle Button */}
+        <button
+          onClick={toggleTheme}
+          aria-label={`Switch to ${isLight ? 'dark' : 'light'} mode`}
+          title={`Switch to ${isLight ? 'dark' : 'light'} mode`}
+          style={{
+            width: '100%',
+            height: '38px',
+            marginTop: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: isSidebarExpanded ? 'flex-start' : 'center',
+            gap: isSidebarExpanded ? '11px' : '0',
+            padding: isSidebarExpanded ? '0 11px' : '0',
+            backgroundColor: isLight ? '#F1F5F9' : '#18181B',
+            color: isLight ? '#D97706' : '#EAB308',
+            border: isLight ? '1px solid #CBD5E1' : '1px solid rgba(234, 179, 8, 0.3)',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            transition: 'all 200ms ease'
+          }}
+        >
+          {isLight ? <Moon size={18} strokeWidth={2} /> : <Sun size={18} strokeWidth={2} />}
+          <span style={{
+            maxWidth: isSidebarExpanded ? '100px' : '0',
+            opacity: isSidebarExpanded ? 1 : 0,
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+            fontSize: '11.5px',
+            fontWeight: 700,
+            letterSpacing: '0.3px',
+            transition: 'max-width 180ms ease, opacity 140ms ease'
+          }}>
+            {isLight ? 'Dark Mode' : 'Light Mode'}
+          </span>
+        </button>
 
-        {/* Mobile Hamburger Menu */}
-        {isSmallScreen && (
+      </aside>
+    );
+  }
+
+  return (
+    <nav
+      role="navigation"
+      aria-label="Mobile navigation"
+      style={{
+        position: 'fixed',
+        width: '100%',
+        top: 0,
+        left: 0,
+        zIndex: 9999,
+        backgroundColor: isLight ? '#FFFFFF' : '#000000',
+        borderBottom: isLight ? '1px solid #E2E8F0' : '1px solid rgba(234, 179, 8, 0.3)',
+        padding: '14px 20px',
+        boxSizing: 'border-box',
+        transition: 'background-color 0.3s ease, border-color 0.3s ease'
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <a href="#hero" aria-label="Back to top" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+          <img
+            src={sidebarProfile}
+            alt=""
+            style={{ width: '36px', height: '36px', borderRadius: '8px', border: '1px solid rgba(234, 179, 8, 0.55)', objectFit: 'cover', objectPosition: '50% 38%' }}
+          />
+        </a>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Mobile Theme Toggle Button */}
           <button
-            onClick={() => setIsOpen(!isOpen)}
-            aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
-            aria-expanded={isOpen}
+            onClick={toggleTheme}
+            aria-label={`Switch to ${isLight ? 'dark' : 'light'} mode`}
+            title={`Switch to ${isLight ? 'dark' : 'light'} mode`}
             style={{
-              background: 'none',
-              border: 'none',
-              color: '#EAB308',
-              fontSize: '24px',
-              cursor: 'pointer',
-              padding: '5px',
+              width: '36px',
+              height: '36px',
+              borderRadius: '8px',
+              backgroundColor: isLight ? '#F1F5F9' : '#111111',
+              border: isLight ? '1px solid #CBD5E1' : '1px solid rgba(234, 179, 8, 0.4)',
+              color: isLight ? '#D97706' : '#EAB308',
               display: 'flex',
-              flexDirection: 'column',
-              gap: '5px'
-            }}>
-            <div style={{ width: '24px', height: '3px', backgroundColor: '#EAB308', transition: 'all 0.3s', transform: isOpen ? 'rotate(45deg) translateY(10px)' : 'rotate(0)' }} />
-            <div style={{ width: '24px', height: '3px', backgroundColor: '#EAB308', opacity: isOpen ? 0 : 1, transition: 'all 0.3s' }} />
-            <div style={{ width: '24px', height: '3px', backgroundColor: '#EAB308', transition: 'all 0.3s', transform: isOpen ? 'rotate(-45deg) translateY(-10px)' : 'rotate(0)' }} />
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer'
+            }}
+          >
+            {isLight ? <Moon size={18} /> : <Sun size={18} />}
           </button>
-        )}
+
+          <button
+            type="button"
+            onClick={() => setIsOpen((open) => !open)}
+            aria-label={isOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isOpen}
+            style={{ background: 'none', border: 'none', color: isLight ? '#D97706' : '#EAB308', padding: '4px' }}
+          >
+            <div style={{ width: '22px', height: '2px', backgroundColor: isLight ? '#D97706' : '#EAB308', transition: 'all 0.3s', transform: isOpen ? 'rotate(45deg) translateY(7px)' : 'none' }} />
+            <div style={{ width: '22px', height: '2px', backgroundColor: isLight ? '#D97706' : '#EAB308', opacity: isOpen ? 0 : 1, margin: '5px 0', transition: 'all 0.3s' }} />
+            <div style={{ width: '22px', height: '2px', backgroundColor: isLight ? '#D97706' : '#EAB308', transition: 'all 0.3s', transform: isOpen ? 'rotate(-45deg) translateY(-7px)' : 'none' }} />
+          </button>
+        </div>
       </div>
 
-      {/* Mobile Menu */}
-      {isSmallScreen && isOpen && (
-        <div
-          role="menu"
-          aria-label="Mobile navigation"
-          style={{
-            position: 'absolute',
-            top: '100%',
-            left: '0',
-            right: '0',
-            backgroundColor: '#111111',
-            borderTop: '1px solid rgba(234, 179, 8, 0.3)',
-            padding: '20px 30px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '15px',
-            marginTop: isScrolled ? '10px' : '20px',
-            animation: 'slideDown 0.3s ease'
-          }}>
-          {navLinks.map((link) => (
-            <a 
-              key={link.name}
-              href={link.href}
-              role="menuitem"
-              style={{
-                color: isActiveLink(link.href) ? '#EAB308' : '#FFFFFF',
-                textDecoration: 'none',
-                fontSize: '14px',
-                fontWeight: isActiveLink(link.href) ? '700' : '500',
-                padding: '10px 0',
-                borderBottom: '1px solid rgba(234, 179, 8, 0.1)',
-                transition: 'color 0.2s',
-                display: 'block'
-              }}
-              onMouseEnter={(e) => (e.currentTarget as HTMLAnchorElement).style.color = '#EAB308'}
-              onMouseLeave={(e) => {
-                if (!isActiveLink(link.href)) {
-                  (e.currentTarget as HTMLAnchorElement).style.color = '#FFFFFF';
-                }
-              }}
-              onClick={handleLinkClick}
-            >
-              {link.name}
-            </a>
-          ))}
-          <a
-            href="#contact"
-            role="menuitem"
-            style={{
-              backgroundColor: '#EAB308',
-              color: '#000000',
-              padding: '10px 20px',
-              borderRadius: '6px',
-              textDecoration: 'none',
-              fontWeight: 'bold',
-              fontSize: '13px',
-              textAlign: 'center',
-              marginTop: '10px',
-              cursor: 'pointer',
-              display: 'block'
-            }}
-            onClick={handleLinkClick}
-          >
-            Contact
-          </a>
+      {isOpen && (
+        <div style={{ backgroundColor: isLight ? '#F8FAFC' : '#111111', borderTop: isLight ? '1px solid #E2E8F0' : '1px solid rgba(234, 179, 8, 0.2)', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+          {navLinks.map((link) => {
+            const Icon = link.icon;
+            return (
+              <a
+                key={link.name}
+                href={link.href}
+                onClick={() => setIsOpen(false)}
+                style={{ display: 'flex', alignItems: 'center', gap: '12px', color: isActiveLink(link.href) ? (isLight ? '#D97706' : '#EAB308') : (isLight ? '#0F172A' : '#FFFFFF'), textDecoration: 'none', fontSize: '15px', fontWeight: 600, padding: '8px 0' }}
+              >
+                <Icon size={18} />
+                <span>{link.name}</span>
+              </a>
+            );
+          })}
         </div>
       )}
     </nav>

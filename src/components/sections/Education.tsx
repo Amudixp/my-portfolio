@@ -2,12 +2,16 @@ import { useState, useRef } from 'react';
 import type { MouseEvent } from 'react';
 import { motion } from 'framer-motion';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { education } from '../../data/profile';
+import { useTheme } from '../../context/ThemeContext';
 
 export const Education = () => {
   const isSmallScreen = useMediaQuery('(max-width: 767px)');
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
 
   const handleMouseMove = (e: MouseEvent) => {
     if (!containerRef.current) return;
@@ -17,53 +21,6 @@ export const Education = () => {
       y: e.clientY - rect.top
     });
   };
-
-  // Certifications data - synced from CV
-  const certifications = [
-    {
-      id: '01',
-      title: 'Foundation of Machine Learning',
-      issuer: 'DICODING',
-      date: 'March 2026',
-      link: 'https://www.dicoding.com/certificates/JLX1VL93NZ72'
-    },
-    {
-      id: '02',
-      title: 'Introduction to SQL',
-      issuer: 'DICODING',
-      date: 'March 2026',
-      link: 'https://www.dicoding.com/certificates/KEXLQ036WPG2'
-    },
-    {
-      id: '03',
-      title: 'Introduction to Data Science',
-      issuer: 'DICODING',
-      date: 'March 2026',
-      link: 'https://www.dicoding.com/certificates/6RPN7W829X2M'
-    },
-    {
-      id: '04',
-      title: 'Foundation of Artificial Intelligence',
-      issuer: 'DICODING',
-      date: 'Feb 2026',
-      link: 'https://www.dicoding.com/certificates/0LZ0Y1YRNX65'
-    },
-    {
-      id: '05',
-      title: 'Start Code with Python',
-      issuer: 'DICODING',
-      date: 'Feb 2026',
-      link: 'https://www.dicoding.com/certificates/07Z67R73JPQR'
-    },
-    {
-      id: '06',
-      title: 'Generative AI Certified',
-      issuer: 'MICROSOFT',
-      date: 'Jul 2024',
-      link: 'https://www.linkedin.com/learning/certificates/6f19bd14f4b9c69179db72c1978a25e8a193200d743b8961f800e79da111e4b6?trk=share_certificate'
-    }
-  ];
-
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -90,15 +47,16 @@ export const Education = () => {
       id="education"
       style={{
         padding: isSmallScreen ? '50px 16px' : '90px 60px',
-        backgroundColor: '#000000',
+        backgroundColor: isLight ? '#F8FAFC' : '#000000',
         position: 'relative',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        transition: 'background-color 0.3s ease'
       }}>
       
       {/* Cursor-following glow background */}
       <motion.div
         animate={{
-          background: `radial-gradient(600px at ${mousePos.x}px ${mousePos.y}px, rgba(234, 179, 8, 0.05), transparent 70%)`
+          background: `radial-gradient(600px at ${mousePos.x}px ${mousePos.y}px, ${isLight ? 'rgba(217, 119, 6, 0.05)' : 'rgba(234, 179, 8, 0.05)'}, transparent 70%)`
         }}
         style={{
           position: 'fixed',
@@ -128,12 +86,39 @@ export const Education = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          style={{ marginBottom: '40px' }}>
-          <h2 style={{ fontSize: isSmallScreen ? 'clamp(28px, 6vw, 32px)' : '48px', fontWeight: '900', color: '#FFFFFF', margin: '0 0 20px 0', fontFamily: 'Poppins, sans-serif', textAlign: 'center' }}>
-            Certifications & Licenses.
+          style={{ marginBottom: '50px' }}>
+          <h2 style={{ fontSize: isSmallScreen ? 'clamp(28px, 6vw, 32px)' : '48px', fontWeight: '900', color: isLight ? '#0F172A' : '#FFFFFF', margin: '0 0 20px 0', fontFamily: 'Poppins, sans-serif', textAlign: 'center' }}>
+            Education & Qualifications.
           </h2>
-          <div style={{ width: '80px', height: '4px', backgroundColor: '#EAB308', borderRadius: '2px', margin: '0 auto' }} />
+          <div style={{ width: '80px', height: '4px', backgroundColor: isLight ? '#D97706' : '#EAB308', borderRadius: '2px', margin: '0 auto' }} />
         </motion.div>
+
+        {/* Education Level Card */}
+        <EducationCard eduData={education} isSmallScreen={isSmallScreen} />
+
+        {/* Honors & Awards Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          style={{ marginBottom: '50px' }}>
+          <h3 style={{ fontSize: isSmallScreen ? '20px' : '26px', fontWeight: '800', color: isLight ? '#0F172A' : '#FFFFFF', marginBottom: '24px', fontFamily: 'Poppins, sans-serif' }}>
+            Honors & Awards
+          </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: isSmallScreen ? '1fr' : '1fr 1fr', gap: '20px' }}>
+            {education.awards.map((award) => (
+              <AwardCard key={award.id} award={award} />
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Certifications Heading */}
+        <div style={{ marginBottom: '30px', textAlign: 'left' }}>
+          <h3 style={{ fontSize: isSmallScreen ? '20px' : '26px', fontWeight: '800', color: isLight ? '#0F172A' : '#FFFFFF', margin: 0, fontFamily: 'Poppins, sans-serif' }}>
+            Certifications & Licenses
+          </h3>
+        </div>
 
         {/* Credential Ledger */}
         <motion.div
@@ -145,19 +130,19 @@ export const Education = () => {
             display: 'flex',
             flexDirection: 'column',
             gap: '0',
-            borderTop: '1px solid rgba(234, 179, 8, 0.15)',
-            borderBottom: '1px solid rgba(234, 179, 8, 0.15)'
+            borderTop: isLight ? '1px solid #CBD5E1' : '1px solid rgba(234, 179, 8, 0.15)',
+            borderBottom: isLight ? '1px solid #CBD5E1' : '1px solid rgba(234, 179, 8, 0.15)'
           }}>
           
-          {certifications.map((cert, idx) => (
+          {education.certifications.map((cert, idx) => (
             <motion.div
               key={cert.id}
               variants={itemVariants}
               onMouseEnter={() => setHoveredIndex(idx)}
               onMouseLeave={() => setHoveredIndex(null)}
               style={{
-                borderBottom: '1px solid rgba(234, 179, 8, 0.1)',
-                backgroundColor: hoveredIndex === idx ? 'rgba(17, 17, 17, 0.4)' : 'transparent',
+                borderBottom: isLight ? '1px solid #E2E8F0' : '1px solid rgba(234, 179, 8, 0.1)',
+                backgroundColor: hoveredIndex === idx ? (isLight ? '#F1F5F9' : 'rgba(17, 17, 17, 0.4)') : 'transparent',
                 transition: 'background-color 0.3s ease'
               }}>
               
@@ -186,17 +171,16 @@ export const Education = () => {
                     position: 'relative'
                   }}>
                   
-                  {/* Header Row: Index + Minimalist Arrow */}
+                  {/* Header Row: Index Number */}
                   <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'flex-start',
                     marginBottom: '12px'
                   }}>
-                    {/* Index Number */}
                     <motion.span
                       animate={{
-                        color: hoveredIndex === idx ? '#EAB308' : '#444444',
+                        color: hoveredIndex === idx ? (isLight ? '#D97706' : '#EAB308') : (isLight ? '#94A3B8' : '#444444'),
                         fontSize: hoveredIndex === idx ? '18px' : '16px'
                       }}
                       transition={{ duration: 0.2 }}
@@ -208,23 +192,6 @@ export const Education = () => {
                         textAlign: 'left'
                       }}>
                       {cert.id}
-                    </motion.span>
-
-                    {/* Minimalist Arrow Link - Top Right */}
-                    <motion.span
-                      animate={{
-                        opacity: isSmallScreen ? 1 : (hoveredIndex === idx ? 1 : 0),
-                        x: isSmallScreen ? 0 : (hoveredIndex === idx ? 0 : -5)
-                      }}
-                      transition={{ duration: 0.2 }}
-                      style={{
-                        fontSize: '18px',
-                        color: '#EAB308',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        flexShrink: 0
-                      }}>
-                      ↗
                     </motion.span>
                   </div>
 
@@ -239,7 +206,7 @@ export const Education = () => {
                   }}>
                     <motion.span
                       animate={{
-                        color: hoveredIndex === idx ? '#EAB308' : '#FFFFFF'
+                        color: hoveredIndex === idx ? (isLight ? '#D97706' : '#EAB308') : (isLight ? '#0F172A' : '#FFFFFF')
                       }}
                       transition={{ duration: 0.2 }}
                       style={{
@@ -252,7 +219,7 @@ export const Education = () => {
                     
                     {!isSmallScreen && (
                       <span style={{
-                        color: '#666666',
+                        color: isLight ? '#CBD5E1' : '#666666',
                         fontSize: '14px',
                         fontWeight: '400'
                       }}>
@@ -261,7 +228,7 @@ export const Education = () => {
                     )}
                     
                     <span style={{
-                      color: '#888888',
+                      color: isLight ? '#64748B' : '#888888',
                       fontSize: isSmallScreen ? '12px' : '13px',
                       fontWeight: '500',
                       textTransform: 'uppercase',
@@ -271,12 +238,12 @@ export const Education = () => {
                     </span>
                   </div>
 
-                  {/* Footer: Date in bottom-left corner */}
+                  {/* Footer: Date */}
                   <div style={{
                     textAlign: 'left',
                     fontFamily: 'monospace',
                     fontSize: isSmallScreen ? '12px' : '13px',
-                    color: '#888888',
+                    color: isLight ? '#64748B' : '#888888',
                     fontWeight: '500'
                   }}>
                     {cert.date}
@@ -287,8 +254,179 @@ export const Education = () => {
           ))}
         </motion.div>
 
-
       </div>
     </section>
+  );
+};
+
+// Signature Education Card with Theme Adaptation
+const EducationCard = ({ eduData, isSmallScreen }: { eduData: typeof education; isSmallScreen: boolean }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+
+  return (
+    <motion.div
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      animate={{
+        backgroundColor: isHovered ? '#F59E0B' : (isLight ? '#FFFFFF' : '#111111'),
+        borderColor: isHovered ? '#000000' : (isLight ? '#CBD5E1' : 'rgba(234, 179, 8, 0.35)'),
+        boxShadow: isHovered 
+          ? '0 16px 45px rgba(245, 158, 11, 0.4), 0 0 0 2px #000000' 
+          : (isLight ? '0 4px 20px rgba(0, 0, 0, 0.05)' : '0 4px 20px rgba(0, 0, 0, 0.4)'),
+        y: 0
+      }}
+      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      style={{
+        borderRadius: '18px',
+        borderWidth: '2px',
+        borderStyle: 'solid',
+        padding: isSmallScreen ? '24px' : '36px',
+        marginBottom: '50px',
+        cursor: 'pointer'
+      }}>
+      <div style={{ display: 'flex', flexDirection: isSmallScreen ? 'column' : 'row', justifyContent: 'space-between', alignItems: isSmallScreen ? 'flex-start' : 'center', gap: '16px', marginBottom: '20px' }}>
+        <div>
+          <motion.span 
+            animate={{ color: isHovered ? '#000000' : (isLight ? '#D97706' : '#EAB308') }}
+            transition={{ duration: 0.45 }}
+            style={{ fontSize: '12px', fontWeight: '800', letterSpacing: '1px', textTransform: 'uppercase', fontFamily: 'monospace' }}>
+            EDUCATION LEVEL
+          </motion.span>
+          <motion.h3 
+            animate={{ color: isHovered ? '#000000' : (isLight ? '#0F172A' : '#FFFFFF') }}
+            transition={{ duration: 0.45 }}
+            style={{ fontSize: isSmallScreen ? '22px' : '28px', fontWeight: '800', margin: '6px 0 4px 0', fontFamily: 'Poppins, sans-serif' }}>
+            {eduData.institution}
+          </motion.h3>
+          <motion.p 
+            animate={{ color: isHovered ? '#000000' : (isLight ? '#334155' : '#D1D5DB') }}
+            transition={{ duration: 0.45 }}
+            style={{ fontSize: isSmallScreen ? '14px' : '16px', margin: 0, fontWeight: '700', fontFamily: 'Inter, sans-serif' }}>
+            {eduData.degree}
+          </motion.p>
+        </div>
+        <div style={{ textAlign: isSmallScreen ? 'left' : 'right' }}>
+          <motion.div 
+            animate={{ color: isHovered ? '#000000' : (isLight ? '#D97706' : '#EAB308') }}
+            transition={{ duration: 0.45 }}
+            style={{ fontSize: '14px', fontFamily: 'monospace', fontWeight: '800' }}>
+            {eduData.period}
+          </motion.div>
+          <motion.div 
+            animate={{ color: isHovered ? '#000000' : (isLight ? '#0F172A' : '#FFFFFF') }}
+            transition={{ duration: 0.45 }}
+            style={{ fontSize: '15px', fontWeight: '900', marginTop: '4px', fontFamily: 'Inter, sans-serif' }}>
+            CGPA: {eduData.gpa}
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Relevant Coursework */}
+      <motion.div 
+        animate={{ borderColor: isHovered ? '#000000' : (isLight ? '#E2E8F0' : 'rgba(255, 255, 255, 0.1)') }}
+        transition={{ duration: 0.45 }}
+        style={{ borderTopWidth: '1px', borderTopStyle: 'dashed', paddingTop: '20px', marginTop: '20px' }}>
+        <motion.h4 
+          animate={{ color: isHovered ? '#000000' : (isLight ? '#64748B' : '#9CA3AF') }}
+          transition={{ duration: 0.45 }}
+          style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px', fontWeight: '800', fontFamily: 'monospace' }}>
+          Relevant Courseworks
+        </motion.h4>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          {eduData.relevantCourseworks.map((course: string, idx: number) => (
+            <motion.span
+              key={idx}
+              animate={{
+                backgroundColor: isHovered ? '#000000' : (isLight ? '#F1F5F9' : 'rgba(234, 179, 8, 0.1)'),
+                borderColor: isHovered ? '#000000' : (isLight ? '#CBD5E1' : 'rgba(234, 179, 8, 0.3)'),
+                color: isHovered ? '#FFFFFF' : (isLight ? '#D97706' : '#FDE047')
+              }}
+              transition={{ duration: 0.45 }}
+              style={{
+                borderWidth: '1.5px',
+                borderStyle: 'solid',
+                padding: '6px 14px',
+                borderRadius: '20px',
+                fontSize: '11px',
+                fontWeight: '800',
+                fontFamily: 'monospace',
+                display: 'inline-block',
+                boxShadow: isHovered ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
+              }}>
+              {course}
+            </motion.span>
+          ))}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+// Clean Award Card
+const AwardCard = ({ award }: { award: typeof education.awards[0] }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+
+  return (
+    <motion.div
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      animate={{
+        backgroundColor: isHovered ? '#F59E0B' : (isLight ? '#FFFFFF' : '#111111'),
+        borderColor: isHovered ? '#000000' : (isLight ? '#CBD5E1' : 'rgba(234, 179, 8, 0.35)'),
+        boxShadow: isHovered 
+          ? '0 16px 45px rgba(245, 158, 11, 0.4), 0 0 0 2px #000000' 
+          : (isLight ? '0 4px 20px rgba(0, 0, 0, 0.05)' : '0 4px 20px rgba(0, 0, 0, 0.4)'),
+        y: 0
+      }}
+      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      style={{
+        borderRadius: '18px',
+        borderWidth: '2px',
+        borderStyle: 'solid',
+        padding: '24px 26px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        cursor: 'pointer'
+      }}>
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <motion.span 
+            animate={{
+              backgroundColor: isHovered ? '#000000' : (isLight ? '#FEF3C7' : 'rgba(234, 179, 8, 0.1)'),
+              color: isHovered ? '#FFFFFF' : (isLight ? '#D97706' : '#EAB308')
+            }}
+            transition={{ duration: 0.45 }}
+            style={{ fontSize: '11px', fontWeight: '800', padding: '4px 12px', borderRadius: '12px', textTransform: 'uppercase', fontFamily: 'monospace' }}>
+            {award.tag}
+          </motion.span>
+          <motion.span 
+            animate={{ color: isHovered ? '#000000' : (isLight ? '#64748B' : '#9CA3AF') }}
+            transition={{ duration: 0.45 }}
+            style={{ fontSize: '12px', fontFamily: 'monospace', fontWeight: '800' }}>
+            {award.year}
+          </motion.span>
+        </div>
+        <motion.h4 
+          animate={{ color: isHovered ? '#000000' : (isLight ? '#0F172A' : '#FFFFFF') }}
+          transition={{ duration: 0.45 }}
+          style={{ fontSize: '17px', fontWeight: '800', margin: '0 0 10px 0', lineHeight: '1.4', fontFamily: 'Poppins, sans-serif' }}>
+          {award.title}
+        </motion.h4>
+
+        {award.description && (
+          <motion.p 
+            animate={{ color: isHovered ? '#000000' : (isLight ? '#475569' : '#9CA3AF') }}
+            transition={{ duration: 0.45 }}
+            style={{ fontSize: '13.5px', margin: 0, lineHeight: '1.6', fontWeight: isHovered ? '600' : '400', fontFamily: 'Inter, sans-serif' }}>
+            {award.description}
+          </motion.p>
+        )}
+      </div>
+    </motion.div>
   );
 };
