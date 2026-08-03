@@ -13,7 +13,6 @@ import oskmLapangan from '../../assets/images/aboutme/oskm-lapangan.jpeg';
 import hmifComvis from '../../assets/images/aboutme/hmif-comvis.jpeg';
 import tecComvisMicrosoft from '../../assets/images/aboutme/tec-comvis-microsoft.jpeg';
 import itbAsprak from '../../assets/images/aboutme/itb-asprak.jpeg';
-import inkamOskm from '../../assets/images/aboutme/inkam-oskm.jpg';
 
 export const About = () => {
   const [selectedCategory, setSelectedCategory] = useState<'All' | 'Organization' | 'Event' | 'Visit'>('All');
@@ -85,15 +84,6 @@ export const About = () => {
       image: itbAsprak,
       date: 'SEP 2024'
     },
-    {
-      id: 8,
-      category: 'Organization',
-      tag: 'ORGANIZATION',
-      title: 'HMIF Intracampus Introduction',
-      description: 'Represented the Informatics Student Union (HMIF) to introduce organizational culture to new students during OSKM ITB.',
-      image: inkamOskm,
-      date: 'AUG 2024'
-    }
   ];
 
   // Filter activities based on selected category tab
