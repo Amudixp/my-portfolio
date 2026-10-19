@@ -1,0 +1,17 @@
+# Amudi Purba Portfolio
+
+> Personal portfolio and curriculum vitae of Amudi Purba, an Information Systems and Technology student at Institut Teknologi Bandung (ITB) specializing in AI Systems, SDLC, STLC, Quality Assurance, and enterprise tech solutions.
+
+## Overview
+Amudi Purba is an ITB undergraduate student with practical experience in Software Testing (QA), AI/ML system development, full-stack web applications, and technology leadership.
+
+## Sections & Resources
+- [About & Background](https://amudipurba.com/#about): Philosophy, activities, and campus leadership roles.
+- [Work Experience](https://amudipurba.com/#experience): Quality Assurance at PT Akhdani Reka Solusi, Teaching Assistant at ITB, and organizational leadership.
+- [Key Projects](https://amudipurba.com/#projects): KJPP Consultant Ecosystem, SIMKOPDES Koperasi Desa Hackathon, AI-Assisted CV Screening, SPARK Parking Slot Detection, and more.
+- [Education & Certifications](https://amudipurba.com/#education): Institut Teknologi Bandung (ITB) academic milestones and certifications.
+- [Contact Information](https://amudipurba.com/#contact): Email, LinkedIn, and GitHub links.
+
+## Optional Resources
+- [Full Curriculum Vitae (PDF)](https://amudipurba.com/assets/Amudi%20Purba_CV.pdf): Downloadable CV.
+- [GitHub Profile](https://github.com/amudipurba): Open source code and repositories.

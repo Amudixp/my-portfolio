@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://amudipurba.vercel.app/sitemap.xml

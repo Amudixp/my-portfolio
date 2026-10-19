@@ -1,0 +1,35 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "Amudi Purba Portfolio",
+    "documentationUrl": "https://amudipurba.com"
+  },
+  "entries": [
+    {
+      "identifier": "urn:amudipurba:portfolio-info",
+      "displayName": "Amudi Purba Portfolio & Resume",
+      "type": "text/markdown",
+      "url": "https://amudipurba.com/llms.txt",
+      "description": "Portfolio, technical projects, work experience, and background of Amudi Purba (ITB).",
+      "tags": [
+        "portfolio",
+        "software-engineering",
+        "quality-assurance",
+        "artificial-intelligence",
+        "itb"
+      ],
+      "skills": [
+        "SoftwareTesting",
+        "AISystems",
+        "FullStackDevelopment"
+      ],
+      "representativeQueries": [
+        "Who is Amudi Purba?",
+        "What projects has Amudi Purba worked on?",
+        "Amudi Purba ITB student experience and QA background"
+      ],
+      "version": "1.0.0",
+      "updatedAt": "2026-10-19T00:00:00Z"
+    }
+  ]
+}
