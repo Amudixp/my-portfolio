@@ -27,6 +27,7 @@ export interface ProjectData {
   fullDescription?: string;
   tech: string[];
   image?: string;
+  objectPosition?: string;
   link?: string;
   metrics: { value: string; label: string }[];
 }

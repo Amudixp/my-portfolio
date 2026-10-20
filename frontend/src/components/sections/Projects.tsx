@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useLayoutEffect } from 'react';
 import { ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import { projects } from '../../data/projects';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -10,24 +10,167 @@ interface ColumnProps {
   priority?: boolean;
 }
 
-const TextColumn = ({ project, isSmallScreen }: ColumnProps) => {
-  const titleSize = isSmallScreen ? 'clamp(24px, 5vw, 32px)' : '42px';
+/** Mobile line budget — fixed heights are derived from these so every slide
+ *  reserves the exact same vertical space and the image always starts at the
+ *  same y. Desktop ignores them entirely. */
+const TITLE_LINES = 2;
+const DESC_LINES = 5;
+const TAG_ROWS = 2;
+const DESC_LINE_HEIGHT = 1.7;
+const TITLE_LINE_HEIGHT = 1.15;
+
+/** Measures whether a clamped element overflows its visible box. Re-runs on
+ *  resize (ResizeObserver) and once web fonts finish loading, since both can
+ *  change the number of wrapped lines. */
+function useOverflow(ref: React.RefObject<HTMLElement | null>, deps: unknown[]) {
+  const [overflowing, setOverflowing] = useState(false);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const measure = () => {
+      setOverflowing(el.scrollHeight - el.clientHeight > 1);
+    };
+
+    measure();
+
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+
+    if (typeof document !== 'undefined' && 'fonts' in document) {
+      document.fonts.ready.then(measure).catch(() => {});
+    }
+
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+
+  return overflowing;
+}
+
+const TextColumn = ({ project, isSmallScreen, expanded, onToggleExpand }: ColumnProps & { expanded?: boolean; onToggleExpand?: () => void }) => {
+  const titleSize = isSmallScreen ? 'clamp(22px, 6vw, 32px)' : '42px';
+  const descRef = useRef<HTMLParagraphElement>(null);
+  const tagsRef = useRef<HTMLDivElement>(null);
+  const descOverflows = useOverflow(descRef, [project.id, isSmallScreen, expanded]);
+  const tagsOverflow = useOverflow(tagsRef, [project.id, isSmallScreen]);
+
+  const descText = project.fullDescription || project.description;
+
+  // ── Desktop: unchanged — renders every field at natural height. ──
+  if (!isSmallScreen) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', paddingLeft: '20px', minWidth: 0, width: '100%' }}>
+        <div style={{ minWidth: 0 }}>
+          <span style={{ fontSize: '11px', fontWeight: '500', letterSpacing: '0.4px', color: 'var(--accent-green)', display: 'block', marginBottom: '6px', fontFamily: 'Inter, sans-serif', overflowWrap: 'anywhere' }}>
+            {project.subtitle}
+          </span>
+          <h3 style={{ fontSize: titleSize, fontWeight: '500', color: 'var(--accent-green)', margin: 0, lineHeight: String(TITLE_LINE_HEIGHT), fontFamily: 'Inter Tight, sans-serif', letterSpacing: '-0.02em', overflowWrap: 'anywhere' }}>
+            {project.title}
+          </h3>
+        </div>
+
+        <p style={{ fontSize: '16px', fontWeight: '400', color: 'var(--text-secondary)', margin: 0, lineHeight: String(DESC_LINE_HEIGHT), letterSpacing: '0.2px', overflowWrap: 'anywhere', minWidth: 0 }}>
+          {descText}
+        </p>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px', minWidth: 0 }}>
+          {project.tech.map((tech) => (
+            <span
+              key={tech}
+              style={{
+                fontSize: '12px',
+                fontWeight: '500',
+                color: 'var(--text-primary)',
+                backgroundColor: 'var(--surface-pill)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '20px',
+                padding: '6px 14px',
+                maxWidth: '100%',
+                overflowWrap: 'anywhere',
+              }}>
+              {tech}
+            </span>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '32px', marginTop: '12px', borderTop: '1px solid var(--border-subtle)', paddingTop: '16px', minWidth: 0 }}>
+          {project.metrics.map((metric, midx) => (
+            <div key={midx} style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
+              <div style={{ fontSize: '32px', fontWeight: '500', color: 'var(--accent-green)', lineHeight: '1', fontFamily: 'Inter Tight, sans-serif', letterSpacing: '-0.02em', overflowWrap: 'anywhere' }}>
+                {metric.value}
+              </div>
+              <div style={{ fontSize: '10px', fontWeight: '500', letterSpacing: '0.2px', color: 'var(--text-secondary)', overflowWrap: 'anywhere' }}>
+                {metric.label}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Mobile: fixed-height zones so the image always starts at the same y. ──
+  const titleClamp = {
+    display: '-webkit-box',
+    WebkitBoxOrient: 'vertical' as const,
+    WebkitLineClamp: TITLE_LINES,
+    overflow: 'hidden',
+  };
+  const descClamp = expanded
+    ? {}
+    : {
+        display: '-webkit-box',
+        WebkitBoxOrient: 'vertical' as const,
+        WebkitLineClamp: DESC_LINES,
+        overflow: 'hidden',
+      };
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', paddingLeft: isSmallScreen ? '0px' : '20px' }}>
-      <div>
-        <span style={{ fontSize: '11px', fontWeight: '500', letterSpacing: '0.4px', color: 'var(--accent-green)', display: 'block', marginBottom: '6px', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', paddingLeft: '0px', minWidth: 0, width: '100%' }}>
+      <div style={{ minWidth: 0 }}>
+        <span style={{ fontSize: '11px', fontWeight: '500', letterSpacing: '0.4px', color: 'var(--accent-green)', display: 'block', marginBottom: '6px', fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {project.subtitle}
         </span>
-        <h3 style={{ fontSize: titleSize, fontWeight: '500', color: 'var(--accent-green)', margin: 0, lineHeight: '1.15', fontFamily: 'Inter Tight, sans-serif', letterSpacing: '-0.02em' }}>
+        <h3 style={{ fontSize: titleSize, fontWeight: '500', color: 'var(--accent-green)', margin: 0, lineHeight: String(TITLE_LINE_HEIGHT), fontFamily: 'Inter Tight, sans-serif', letterSpacing: '-0.02em', overflowWrap: 'anywhere', minHeight: `${TITLE_LINES * TITLE_LINE_HEIGHT}em`, ...titleClamp }}>
           {project.title}
         </h3>
       </div>
 
-      <p style={{ fontSize: isSmallScreen ? '14px' : '16px', fontWeight: '400', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.7', letterSpacing: '0.2px' }}>
-        {project.fullDescription || project.description}
-      </p>
+      <div style={{ minWidth: 0 }}>
+        <p
+          id={`project-desc-${project.id}`}
+          ref={descRef}
+          style={{ fontSize: '14px', fontWeight: '400', color: 'var(--text-secondary)', margin: 0, lineHeight: String(DESC_LINE_HEIGHT), letterSpacing: '0.2px', overflowWrap: 'anywhere', minWidth: 0, minHeight: expanded ? undefined : `${DESC_LINES * DESC_LINE_HEIGHT}em`, ...descClamp }}>
+          {descText}
+        </p>
+        <button
+          type="button"
+          onClick={onToggleExpand}
+          aria-expanded={expanded}
+          aria-controls={`project-desc-${project.id}`}
+          style={{
+            marginTop: '4px',
+            padding: '10px 0',
+            minHeight: '44px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: 'var(--accent-green)',
+            fontSize: '13px',
+            fontWeight: 500,
+            fontFamily: 'Inter, sans-serif',
+            letterSpacing: '0.2px',
+            visibility: descOverflows || expanded ? 'visible' : 'hidden',
+          }}>
+          {expanded ? 'Show less' : 'Show more'}
+        </button>
+      </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px' }}>
+      <div ref={tagsRef} style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px', minWidth: 0, minHeight: `calc(${TAG_ROWS} * (12px * 1.2 + 12px) + ${TAG_ROWS - 1} * 8px)`, maxHeight: `calc(${TAG_ROWS} * (12px * 1.2 + 12px) + ${TAG_ROWS - 1} * 8px)`, overflow: 'hidden', alignContent: 'flex-start' }}>
         {project.tech.map((tech) => (
           <span
             key={tech}
@@ -39,20 +182,40 @@ const TextColumn = ({ project, isSmallScreen }: ColumnProps) => {
               border: '1px solid var(--border-subtle)',
               borderRadius: '20px',
               padding: '6px 14px',
-              whiteSpace: 'nowrap',
+              maxWidth: '100%',
+              overflowWrap: 'anywhere',
+              lineHeight: 1.2,
+              height: 'fit-content',
             }}>
             {tech}
           </span>
         ))}
+        {tagsOverflow && (
+          <span
+            aria-hidden="true"
+            style={{
+              fontSize: '12px',
+              fontWeight: '500',
+              color: 'var(--text-secondary)',
+              backgroundColor: 'var(--surface-pill)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '20px',
+              padding: '6px 14px',
+              lineHeight: 1.2,
+              height: 'fit-content',
+            }}>
+            +more
+          </span>
+        )}
       </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '32px', marginTop: '12px', borderTop: '1px solid var(--border-subtle)', paddingTop: '16px' }}>
+      <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '20px', marginTop: '4px', borderTop: '1px solid var(--border-subtle)', paddingTop: '16px', minWidth: 0, height: 'calc(16px + 3.1em)', overflow: 'hidden' }}>
         {project.metrics.map((metric, midx) => (
-          <div key={midx} style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
-            <div style={{ fontSize: isSmallScreen ? '24px' : '32px', fontWeight: '500', color: 'var(--accent-green)', lineHeight: '1', fontFamily: 'Inter Tight, sans-serif', letterSpacing: '-0.02em' }}>
+          <div key={midx} style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0, flex: '1 1 0' }}>
+            <div style={{ fontSize: '24px', fontWeight: '500', color: 'var(--accent-green)', lineHeight: '1', fontFamily: 'Inter Tight, sans-serif', letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {metric.value}
             </div>
-            <div style={{ fontSize: '10px', fontWeight: '500', letterSpacing: '0.2px', color: 'var(--text-secondary)' }}>
+            <div style={{ fontSize: '10px', fontWeight: '500', letterSpacing: '0.2px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {metric.label}
             </div>
           </div>
@@ -63,6 +226,7 @@ const TextColumn = ({ project, isSmallScreen }: ColumnProps) => {
 };
 
 const ImageColumn = ({ project, isSmallScreen }: ColumnProps) => {
+  const objectPosition = project.objectPosition || 'center';
   const image = (
     <img
       src={project.image}
@@ -71,28 +235,38 @@ const ImageColumn = ({ project, isSmallScreen }: ColumnProps) => {
       height={720}
       loading="lazy"
       decoding="async"
-      className={`w-full h-full object-cover transition-transform duration-500 ease-out ${project.link ? 'group-hover:scale-105' : ''}`}
-      style={{ backgroundColor: 'var(--surface-dark)' }}
+      className={`w-full h-full transition-transform duration-500 ease-out ${project.link ? 'group-hover:scale-105' : ''}`}
+      style={{ objectFit: 'cover', objectPosition, backgroundColor: 'var(--surface-dark)' }}
     />
   );
 
-  const cardStyle = {
-    width: '100%',
-    height: isSmallScreen ? '220px' : '340px',
-    aspectRatio: '16 / 9',
-    backgroundColor: 'var(--surface-dark)',
-    display: 'flex',
-    willChange: 'transform',
-  } as const;
+  const cardStyle = isSmallScreen
+    ? {
+        width: '100%',
+        maxWidth: '100%',
+        aspectRatio: 'var(--project-media-ratio, 16 / 9)',
+        backgroundColor: 'var(--surface-dark)',
+        display: 'flex',
+        willChange: 'transform',
+      }
+    : {
+        width: '100%',
+        maxWidth: '100%',
+        height: '340px',
+        aspectRatio: '16 / 9',
+        backgroundColor: 'var(--surface-dark)',
+        display: 'flex',
+        willChange: 'transform',
+      };
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', width: '100%' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: isSmallScreen ? 'auto' : '100%', width: '100%', minWidth: 0 }}>
       {project.link ? (
         <a
           href={project.link}
           target="_blank"
           rel="noopener noreferrer"
-          className="group relative rounded-2xl overflow-hidden cursor-pointer shadow-2xl flex items-center justify-center border border-[#E3E3E0]"
+          className={`group relative rounded-2xl overflow-hidden cursor-pointer flex items-center justify-center border border-[#E3E3E0] ${isSmallScreen ? 'shadow-md' : 'shadow-2xl'}`}
           style={cardStyle}
         >
           {image}
@@ -103,7 +277,7 @@ const ImageColumn = ({ project, isSmallScreen }: ColumnProps) => {
         </a>
       ) : (
         <div
-          className="relative rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center border border-[#E3E3E0]"
+          className={`relative rounded-2xl overflow-hidden flex items-center justify-center border border-[#E3E3E0] ${isSmallScreen ? 'shadow-md' : 'shadow-2xl'}`}
           style={cardStyle}
           aria-label={`${project.title} preview — Confidential Project`}
         >
@@ -119,6 +293,8 @@ const ImageColumn = ({ project, isSmallScreen }: ColumnProps) => {
 
 export const Projects = () => {
   const [activeSlide, setActiveSlide] = useState(0);
+  // Only one slide can be expanded at a time; reset whenever the slide changes.
+  const [expandedSlide, setExpandedSlide] = useState<number | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isSmallScreen = useMediaQuery('(max-width: 1023px)');
   const isScrollingRef = useRef(false);
@@ -137,7 +313,14 @@ export const Projects = () => {
       const currentSlide = Math.round(scrollLeft / containerWidth);
       const clampedSlide = Math.max(0, Math.min(currentSlide, projects.length - 1));
 
-      setActiveSlide((prev) => (prev !== clampedSlide ? clampedSlide : prev));
+      setActiveSlide((prev) => {
+        if (prev !== clampedSlide) {
+          // Collapse any expanded description so the carousel height stays uniform.
+          setExpandedSlide(null);
+          return clampedSlide;
+        }
+        return prev;
+      });
     });
   }, []);
 
@@ -148,6 +331,7 @@ export const Projects = () => {
       const containerWidth = scrollContainerRef.current.clientWidth;
 
       setActiveSlide(targetIndex);
+      setExpandedSlide(null);
 
       scrollContainerRef.current.scrollTo({
         left: targetIndex * containerWidth,
@@ -174,9 +358,9 @@ export const Projects = () => {
   };
 
   const sectionPadding = isSmallScreen
-    ? 'var(--section-gap) 16px 50px 16px'
+    ? 'var(--section-gap) 16px var(--section-gap) 16px'
     : 'var(--section-gap) 40px 80px 40px';
-  const minHeight = isSmallScreen ? '350px' : '480px';
+  const slideMinHeight = '480px';
 
   // Pagination geometry — kept fluid so the control row never overflows on phones.
   const slotSize = isSmallScreen ? 36 : 42;
@@ -188,10 +372,10 @@ export const Projects = () => {
 
   return (
     <section id="projects" style={{ padding: sectionPadding, backgroundColor: 'var(--bg-page)', minHeight: 'auto', transition: 'background-color 0.3s ease' }}>
-      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '1400px', margin: '0 auto', width: '100%', minWidth: 0 }}>
 
         {/* Section Header */}
-        <div style={{ marginBottom: '40px' }}>
+        <div style={{ marginBottom: isSmallScreen ? '24px' : '40px' }}>
           <div>
             <span style={{ fontSize: '12px', fontWeight: '500', color: 'var(--accent-green)', letterSpacing: '0.3px', fontFamily: 'Inter, sans-serif' }}>
               PORTFOLIO SHOWCASE
@@ -212,11 +396,14 @@ export const Projects = () => {
             overflowX: 'auto',
             scrollBehavior: 'smooth',
             gap: '0',
-            paddingBottom: '20px',
+            paddingBottom: isSmallScreen ? '0px' : '20px',
             scrollSnapType: 'x mandatory',
             WebkitOverflowScrolling: 'touch',
             msOverflowStyle: 'none',
             scrollbarWidth: 'none',
+            width: '100%',
+            maxWidth: '100%',
+            minWidth: 0,
           }}>
           {projects.map((project, idx) => (
             <div
@@ -224,24 +411,37 @@ export const Projects = () => {
               style={{
                 flex: '0 0 100%',
                 display: 'grid',
-                gridTemplateColumns: isSmallScreen ? '1fr' : '1.2fr 1fr',
-                gap: isSmallScreen ? '30px' : '50px',
-                alignItems: 'center',
-                minHeight: minHeight,
+                gridTemplateColumns: isSmallScreen ? 'minmax(0, 1fr)' : 'minmax(0, 1.2fr) minmax(0, 1fr)',
+                gap: isSmallScreen ? '18px' : '50px',
+                alignItems: isSmallScreen ? 'start' : 'center',
+                minHeight: isSmallScreen ? '0px' : slideMinHeight,
                 scrollSnapAlign: 'start',
                 padding: isSmallScreen ? '0 10px' : '0 20px',
                 boxSizing: 'border-box',
                 margin: 0,
+                minWidth: 0,
+                maxWidth: '100%',
+                width: '100%',
               }}>
               {isSmallScreen || idx % 2 === 0 ? (
                 <>
-                  <TextColumn project={project} isSmallScreen={isSmallScreen} />
+                  <TextColumn
+                    project={project}
+                    isSmallScreen={isSmallScreen}
+                    expanded={expandedSlide === project.id}
+                    onToggleExpand={() => setExpandedSlide((prev) => (prev === project.id ? null : project.id))}
+                  />
                   <ImageColumn project={project} isSmallScreen={isSmallScreen} />
                 </>
               ) : (
                 <>
                   <ImageColumn project={project} isSmallScreen={isSmallScreen} />
-                  <TextColumn project={project} isSmallScreen={isSmallScreen} />
+                  <TextColumn
+                    project={project}
+                    isSmallScreen={isSmallScreen}
+                    expanded={expandedSlide === project.id}
+                    onToggleExpand={() => setExpandedSlide((prev) => (prev === project.id ? null : project.id))}
+                  />
                 </>
               )}
             </div>
@@ -256,7 +456,7 @@ export const Projects = () => {
           justifyContent: 'center',
           columnGap: '16px',
           rowGap: '14px',
-          marginTop: '32px',
+          marginTop: isSmallScreen ? '14px' : '32px',
         }}>
           {/* Previous Button */}
           <button

@@ -34,6 +34,11 @@
   /* Larger top gap for sections whose title should read clearly separate from
      the previous section (proximity: title closer to its own content). */
   --section-gap-top-lg: 88px;
+  /* Fixed aspect ratio of the mobile project media mask. Images of any native
+     ratio are zoomed (object-fit: cover) to fill this mask edge-to-edge, so the
+     carousel height stays constant between slides and the indicator row never
+     jumps. Change this single value to retune the media shape. */
+  --project-media-ratio: 16 / 9;
 }
 
 @media (max-width: 1023px) {
