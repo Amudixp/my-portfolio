@@ -14,6 +14,17 @@ import hmifComvis from '../../assets/images/aboutme/hmif-comvis.webp';
 import tecComvisMicrosoft from '../../assets/images/aboutme/tec-comvis-microsoft.webp';
 import itbAsprak from '../../assets/images/aboutme/itb-asprak.webp';
 
+// Intrinsic dimensions after image optimisation (used as width/height hints).
+const ACTIVITY_IMAGE_SIZE: Record<string, { width: number; height: number }> = {
+  [tecRecruitment]: { width: 488, height: 868 },
+  [tecComvis]: { width: 488, height: 276 },
+  [hmifWispril]: { width: 488, height: 651 },
+  [oskmLapangan]: { width: 488, height: 868 },
+  [hmifComvis]: { width: 488, height: 651 },
+  [tecComvisMicrosoft]: { width: 488, height: 651 },
+  [itbAsprak]: { width: 488, height: 651 },
+};
+
 export const About = () => {
   const [selectedCategory, setSelectedCategory] = useState<'All' | 'Organization' | 'Event' | 'Visit'>('All');
   const [activeModalItem, setActiveModalItem] = useState<typeof activities[0] | null>(null);
@@ -160,6 +171,7 @@ export const About = () => {
               baseOpacity={0.2}
               enableBlur={true}
               blurStrength={3}
+              wordChunkSize={3}
               style={{
                 fontSize: isSmallScreen ? '15px' : '18px',
                 lineHeight: '1.8',
@@ -179,7 +191,7 @@ export const About = () => {
             transition={{ duration: 0.6 }}
             style={{
               display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
               gap: '16px'
             }}>
             
@@ -210,14 +222,19 @@ export const About = () => {
           {/* Instagram Web Tab Navigation Header */}
           <div style={{
             display: 'flex',
-            justifyContent: 'center',
+            justifyContent: isSmallScreen ? 'flex-start' : 'center',
             alignItems: 'center',
             borderTop: isLight ? '1px solid var(--border-subtle)' : '1px solid var(--border-subtle)',
-            marginBottom: '4px'
+            marginBottom: '4px',
+            overflowX: 'auto',
+            maxWidth: '100%',
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none'
           }}>
             <div style={{
               display: 'flex',
-              gap: isSmallScreen ? '20px' : '40px'
+              gap: isSmallScreen ? '18px' : '40px',
+              flexShrink: 0
             }}>
               {categoryTabs.map((tab) => {
                 const IconComponent = tab.icon;
@@ -231,6 +248,7 @@ export const About = () => {
                       border: 'none',
                       borderTop: isSelected ? '2px solid var(--accent-green)' : '2px solid transparent',
                       padding: '14px 4px 10px 4px',
+                      minHeight: '44px',
                       color: isSelected ? (isLight ? 'var(--text-primary)' : 'var(--text-primary)') : (isLight ? 'var(--text-secondary)' : 'var(--text-secondary)'),
                       fontSize: '12px',
                       fontWeight: '500',
@@ -238,7 +256,10 @@ export const About = () => {
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
+                      justifyContent: 'center',
                       gap: '6px',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
                       transition: 'all 0.2s ease'
                     }}
                     onMouseEnter={(e) => {
@@ -328,6 +349,10 @@ const InstagramTile = ({
       <img
         src={activity.image}
         alt={activity.title}
+        width={ACTIVITY_IMAGE_SIZE[activity.image]?.width ?? 488}
+        height={ACTIVITY_IMAGE_SIZE[activity.image]?.height ?? 651}
+        loading="lazy"
+        decoding="async"
         style={{
           position: 'absolute',
           inset: 0,
@@ -390,6 +415,12 @@ const InstagramModal = ({
           position: 'absolute',
           top: '20px',
           right: '20px',
+          width: '44px',
+          height: '44px',
+          padding: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           backgroundColor: 'transparent',
           border: 'none',
           color: '#FFFFFF',
@@ -410,12 +441,13 @@ const InstagramModal = ({
           backgroundColor: 'var(--surface-dark)',
           border: '1px solid rgba(255, 255, 255, 0.18)',
           borderRadius: '16px',
-          overflow: 'hidden',
+          overflowY: 'auto',
           maxWidth: '1000px',
           width: '100%',
           maxHeight: '90vh',
           display: 'grid',
           gridTemplateColumns: isDesktop ? '1.2fr 0.8fr' : '1fr',
+          alignContent: 'start',
           boxShadow: '0 25px 60px rgba(0,0,0,0.9)'
         }}>
         
@@ -426,17 +458,21 @@ const InstagramModal = ({
           alignItems: 'center',
           justifyContent: 'center',
           position: 'relative',
-          minHeight: isDesktop ? '500px' : '300px',
-          maxHeight: '70vh'
+          minHeight: isDesktop ? '500px' : '200px',
+          maxHeight: isDesktop ? '70vh' : '45vh'
         }}>
           <img
             src={activity.image}
             alt={activity.title}
+            width={ACTIVITY_IMAGE_SIZE[activity.image]?.width ?? 488}
+            height={ACTIVITY_IMAGE_SIZE[activity.image]?.height ?? 651}
+            loading="lazy"
+            decoding="async"
             style={{
               width: '100%',
               height: '100%',
               objectFit: 'contain',
-              maxHeight: '70vh'
+              maxHeight: isDesktop ? '70vh' : '45vh'
             }}
           />
         </div>

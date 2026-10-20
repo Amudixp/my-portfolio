@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { CSSProperties, ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties, ReactNode, RefObject } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, useInView, useReducedMotion } from 'framer-motion';
 import { Plus, X } from 'lucide-react';
-import { Tooltip } from '@heroui/react';
 import { experiences, organizations } from '../../data/experience';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
-import type { ExperienceData, OrganizationData } from '../../types';
+import type { ExperienceData, OrganizationData, TooltipPlacement } from '../../types';
 
 interface CardLayout {
   x: number;
@@ -45,6 +45,10 @@ const LAYERS = {
 } as const;
 
 const DESIGN_H = 900;
+const DESIGN_W = 1200;
+const CLUSTER_X = 0.5;
+const CLUSTER_Y = 0.47;
+const MIN_LOGO_SCALE = 0.82;
 const CARD_WIDTH = 300;
 const GAP = 24;
 const SIDE_MARGIN = 24;
@@ -52,14 +56,25 @@ const TOP_MARGIN = 24;
 const BOTTOM_MARGIN = 48;
 const GRACE_MS = 170;
 const TRANSITION_MS = 300;
+// Minimum horizontal gap between the cluster edge and the nearest card column.
+// Config-driven so the tooltip always has room without covering a card.
+// 250px column half-extent minus the widest logo reach (~93px) yields the
+// target ~140-160px of free space between logo edge and card edge at >=1280px.
+const CLUSTER_CARD_CLEARANCE = 250;
+const CARD_COLUMN_HALF = CARD_WIDTH / 2 + CLUSTER_CARD_CLEARANCE;
+
+// Card columns are derived from the cluster center + design half-width so there
+// is always CLUSTER_CARD_CLEARANCE of free space between logo edge and card edge.
+const leftColX = (): number => ((DESIGN_W * CLUSTER_X - CARD_COLUMN_HALF) / DESIGN_W) * 100;
+const rightColX = (): number => ((DESIGN_W * CLUSTER_X + CARD_COLUMN_HALF) / DESIGN_W) * 100;
 
 const CARD_LAYOUT: CardLayout[] = [
-  { x: 20, y: 78 },
-  { x: 20, y: 26 },
-  { x: 80, y: 26 },
-  { x: 20, y: 52 },
-  { x: 80, y: 52 },
-  { x: 80, y: 78 },
+  { x: rightColX(), y: 76 },
+  { x: leftColX(), y: 24 },
+  { x: rightColX(), y: 24 },
+  { x: leftColX(), y: 50 },
+  { x: leftColX(), y: 76 },
+  { x: rightColX(), y: 50 },
 ];
 
 const MIN_DOT_ANGLE = (22 * Math.PI) / 180;
@@ -84,6 +99,331 @@ const rectEdgePoint = (
   return { x: cx + dx * s, y: cy + dy * s };
 };
 
+// Edge point of a rotated square (side `size`) toward a target point.
+const rotatedEdgePoint = (
+  cx: number,
+  cy: number,
+  size: number,
+  rotDeg: number,
+  tx: number,
+  ty: number
+) => {
+  const rad = (rotDeg * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const dx = tx - cx;
+  const dy = ty - cy;
+  // Transform the direction into the square's local (unrotated) frame.
+  const ldx = dx * cos + dy * sin;
+  const ldy = -dx * sin + dy * cos;
+  const hw = size / 2;
+  const sx = ldx !== 0 ? hw / Math.abs(ldx) : Number.POSITIVE_INFINITY;
+  const sy = ldy !== 0 ? hw / Math.abs(ldy) : Number.POSITIVE_INFINITY;
+  const s = Math.min(sx, sy);
+  const lx = ldx * s;
+  const ly = ldy * s;
+  return { x: cx + lx * cos - ly * sin, y: cy + lx * sin + ly * cos };
+};
+
+const TOOLTIP_OFFSET = 12;
+const TOOLTIP_MARGIN = 8;
+const MIN_TOOLTIP_WIDTH = 140;
+const AVG_CHAR_WIDTH = 6.6;
+const MAX_TOOLTIP_WIDTH = 240;
+const TOOLTIP_PADDING = 24;
+const PENALTY_OVERLAP = 1000;
+const PENALTY_VIEWPORT = 400;
+const CENTER_BONUS = 30;
+
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+const PLACEMENT_ORDER: TooltipPlacement[] = ['right', 'left', 'bottom', 'top'];
+
+interface Rect {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+interface TooltipBox {
+  top: number;
+  left: number;
+  right: number;
+  bottom: number;
+  placement: TooltipPlacement;
+}
+
+const estimateTooltipSize = (label: string) => {
+  const chars = Math.max(1, label.length);
+  const width = clamp(MIN_TOOLTIP_WIDTH, chars * AVG_CHAR_WIDTH + TOOLTIP_PADDING, MAX_TOOLTIP_WIDTH);
+  const lines = Math.max(1, Math.ceil((chars * AVG_CHAR_WIDTH) / width));
+  return { w: Math.round(width), h: Math.round(18 * lines + 20) };
+};
+
+// Anchor a tooltip box of `tipW` x `tipH` to the trigger rect on `placement`.
+const computeTooltipBox = (
+  rect: Rect,
+  tipW: number,
+  tipH: number,
+  placement: TooltipPlacement
+): TooltipBox => {
+  let left = 0;
+  let top = 0;
+  if (placement === 'top') {
+    left = rect.left + (rect.right - rect.left) / 2 - tipW / 2;
+    top = rect.top - tipH - TOOLTIP_OFFSET;
+  } else if (placement === 'bottom') {
+    left = rect.left + (rect.right - rect.left) / 2 - tipW / 2;
+    top = rect.bottom + TOOLTIP_OFFSET;
+  } else if (placement === 'left') {
+    left = rect.left - tipW - TOOLTIP_OFFSET;
+    top = rect.top + (rect.bottom - rect.top) / 2 - tipH / 2;
+  } else {
+    left = rect.right + TOOLTIP_OFFSET;
+    top = rect.top + (rect.bottom - rect.top) / 2 - tipH / 2;
+  }
+  return { left, top, right: left + tipW, bottom: top + tipH, placement };
+};
+
+const rectsOverlap = (a: Rect, b: Rect) =>
+  a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+
+const overlapArea = (a: Rect, b: Rect) => {
+  const w = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+  const h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+  return w > 0 && h > 0 ? w * h : 0;
+};
+
+const segmentIntersectsRect = (
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  rect: Rect
+): boolean => {
+  if (x1 >= rect.left && x1 <= rect.right && y1 >= rect.top && y1 <= rect.bottom) return true;
+  if (x2 >= rect.left && x2 <= rect.right && y2 >= rect.top && y2 <= rect.bottom) return true;
+  const edges: Array<[number, number, number, number]> = [
+    [rect.left, rect.top, rect.right, rect.top],
+    [rect.right, rect.top, rect.right, rect.bottom],
+    [rect.right, rect.bottom, rect.left, rect.bottom],
+    [rect.left, rect.bottom, rect.left, rect.top],
+  ];
+  return edges.some(([ax, ay, bx, by]) => segmentsIntersect(x1, y1, x2, y2, ax, ay, bx, by));
+};
+
+const segmentsIntersect = (
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  x3: number,
+  y3: number,
+  x4: number,
+  y4: number
+): boolean => {
+  const d = (x2 - x1) * (y4 - y3) - (y2 - y1) * (x4 - x3);
+  if (d === 0) return false;
+  const t = ((x3 - x1) * (y4 - y3) - (y3 - y1) * (x4 - x3)) / d;
+  const u = ((x3 - x1) * (y2 - y1) - (y3 - y1) * (x2 - x1)) / d;
+  return t >= 0 && t <= 1 && u >= 0 && u <= 1;
+};
+
+interface PlacementScoringContext {
+  cards: Rect[];
+  logos: Rect[];
+  lines: LeaderLine[];
+  activeOrgId: string | null;
+  viewportW: number;
+  viewportH: number;
+  dx: number;
+  dy: number;
+}
+
+// Direction pointing away from the cluster center. Used only as a tie-breaker.
+const computeAutoPlacement = (dx: number, dy: number): TooltipPlacement => {
+  if (Math.abs(dy) >= Math.abs(dx)) return dy < 0 ? 'top' : 'bottom';
+  return dx < 0 ? 'left' : 'right';
+};
+
+// Score a candidate side: prefer empty space (no card/logo overlap), avoid
+// cutting other organisations' leader lines, stay inside the viewport. The
+// "away from cluster" direction only acts as a small tie-breaker bonus.
+const scorePlacement = (
+  placement: TooltipPlacement,
+  box: TooltipBox,
+  ctx: PlacementScoringContext
+): number => {
+  let score = 0;
+
+  for (const card of ctx.cards) {
+    if (rectsOverlap(box, card)) score -= PENALTY_OVERLAP + overlapArea(box, card);
+  }
+  for (const logo of ctx.logos) {
+    if (rectsOverlap(box, logo)) score -= PENALTY_OVERLAP + overlapArea(box, logo);
+  }
+  for (const line of ctx.lines) {
+    if (!segmentIntersectsRect(line.x1, line.y1, line.x2, line.y2, box)) continue;
+    score -= line.orgId === ctx.activeOrgId ? 30 : 120;
+  }
+
+  if (box.left < TOOLTIP_MARGIN || box.right > ctx.viewportW - TOOLTIP_MARGIN) score -= PENALTY_VIEWPORT;
+  if (box.top < TOOLTIP_MARGIN || box.bottom > ctx.viewportH - TOOLTIP_MARGIN) score -= PENALTY_VIEWPORT;
+
+  const desired = computeAutoPlacement(ctx.dx, ctx.dy);
+  if (placement === desired) score += CENTER_BONUS;
+
+  return score;
+};
+
+const choosePlacement = (
+  trigger: Rect,
+  tipW: number,
+  tipH: number,
+  ctx: PlacementScoringContext
+): TooltipPlacement => {
+  let best = PLACEMENT_ORDER[0];
+  let bestScore = Number.NEGATIVE_INFINITY;
+  for (const placement of PLACEMENT_ORDER) {
+    const box = computeTooltipBox(trigger, tipW, tipH, placement);
+    const score = scorePlacement(placement, box, ctx);
+    if (score > bestScore) {
+      bestScore = score;
+      best = placement;
+    }
+  }
+  return best;
+};
+
+interface OrgTooltipProps {
+  label: string;
+  triggerRefs: RefObject<Record<string, HTMLDivElement | null>>;
+  orgId: string;
+  center: { cx: number; cy: number };
+  containerRef: RefObject<HTMLDivElement | null>;
+  cardRefs: RefObject<Record<number, HTMLDivElement | null>>;
+  logoTriggerRefs: RefObject<Record<string, HTMLDivElement | null>>;
+  lineList: LeaderLine[];
+  activeOrgId: string | null;
+  override?: TooltipPlacement;
+  version: number;
+}
+
+const OrgTooltip = ({
+  label,
+  triggerRefs,
+  orgId,
+  center,
+  containerRef,
+  cardRefs,
+  logoTriggerRefs,
+  lineList,
+  activeOrgId,
+  override,
+  version,
+}: OrgTooltipProps) => {
+  const tipRef = useRef<HTMLDivElement>(null);
+  const [box, setBox] = useState<TooltipBox | null>(null);
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const trigger = triggerRefs.current?.[orgId];
+      const tip = tipRef.current;
+      if (!trigger || !tip) return;
+
+      const rect = trigger.getBoundingClientRect();
+      const baseRect: Rect = { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom };
+      tip.style.maxWidth = `${MAX_TOOLTIP_WIDTH}px`;
+      const t = tip.getBoundingClientRect();
+      const tipW = t.width || estimateTooltipSize(label).w;
+      const tipH = t.height || estimateTooltipSize(label).h;
+
+      const container = containerRef.current;
+      const base = container?.getBoundingClientRect() ?? { left: 0, top: 0 };
+      const cards: Rect[] = [];
+      Object.values(cardRefs.current).forEach((el) => {
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        cards.push({ left: r.left, top: r.top, right: r.right, bottom: r.bottom });
+      });
+      const logos: Rect[] = [];
+      Object.values(logoTriggerRefs.current).forEach((el) => {
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        logos.push({ left: r.left, top: r.top, right: r.right, bottom: r.bottom });
+      });
+      const lines: LeaderLine[] = lineList.map((line) => ({
+        ...line,
+        x1: base.left + line.x1,
+        y1: base.top + line.y1,
+        x2: base.left + line.x2,
+        y2: base.top + line.y2,
+      }));
+
+      const placement = override
+        ? override
+        : choosePlacement(baseRect, tipW, tipH, {
+            cards,
+            logos,
+            lines,
+            activeOrgId,
+            viewportW: window.innerWidth,
+            viewportH: window.innerHeight,
+            dx: center.cx - rect.left - rect.width / 2,
+            dy: center.cy - (rect.top + rect.height / 2),
+          });
+
+      setBox(computeTooltipBox(baseRect, tipW, tipH, placement));
+    };
+
+    measure();
+    let raf = 0;
+    const onResize = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        measure();
+      });
+    };
+    window.addEventListener('resize', onResize);
+    window.addEventListener('scroll', onResize, true);
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('scroll', onResize, true);
+    };
+  }, [
+    triggerRefs,
+    orgId,
+    label,
+    center,
+    containerRef,
+    cardRefs,
+    logoTriggerRefs,
+    lineList,
+    activeOrgId,
+    override,
+    version,
+  ]);
+
+  return createPortal(
+    <div
+      ref={tipRef}
+      className="org-tooltip"
+      role="tooltip"
+      style={{
+        top: box ? `${box.top}px` : '0px',
+        left: box ? `${box.left}px` : '0px',
+        opacity: box ? 1 : 0,
+      }}
+    >
+      {label}
+    </div>,
+    document.body
+  );
+};
+
 const cardStyle = (
   isOpen: boolean,
   active: boolean,
@@ -96,8 +436,8 @@ const cardStyle = (
   flexDirection: 'column',
   gap: '14px',
   background: active ? 'var(--surface-glass-dark)' : 'var(--surface-glass)',
-  backdropFilter: 'blur(14px)',
-  WebkitBackdropFilter: 'blur(14px)',
+  backdropFilter: 'blur(8px)',
+  WebkitBackdropFilter: 'blur(8px)',
   border: isOpen
     ? '1px solid rgba(226, 250, 106, 0.55)'
     : active
@@ -180,8 +520,8 @@ const ExperienceCard = ({
       initial={prefersReduced ? false : { opacity: 0, y: 18 }}
       animate={{ opacity: !entered ? 0 : dimmed ? 0.55 : 1, y: !entered ? 18 : 0 }}
       transition={{
-        duration: prefersReduced ? 0 : 0.6,
-        delay: prefersReduced || settled ? 0 : 0.5 + index * 0.1,
+        duration: prefersReduced ? 0 : 0.5,
+        delay: prefersReduced || settled ? 0 : 0.15 + index * 0.06,
         ease: [0.16, 1, 0.3, 1],
       }}
       style={cardStyle(isOpen, active, dimmed, prefersReduced)}
@@ -205,6 +545,10 @@ const ExperienceCard = ({
               <img
                 src={org.logo}
                 alt={org.name}
+                width={200}
+                height={200}
+                loading="lazy"
+                decoding="async"
                 style={{ width: '100%', height: '100%', objectFit: 'contain' }}
               />
             </div>
@@ -358,13 +702,43 @@ export const Experience = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<Record<number, HTMLDivElement | null>>({});
-  const logoRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const logoTriggerRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const mobileLogoTriggerRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const openIdRef = useRef<number | null>(null);
   const graceRef = useRef<number | null>(null);
 
   const entered = useInView(sectionRef, { once: true, margin: '-120px' });
   const openExp = experiences.find((exp) => exp.id === openId) ?? null;
   const effectiveOrg = activeOrgId ?? openExp?.organizationId ?? null;
+
+  // Cluster geometry: center follows the real container width; offsets/size
+  // scale down proportionally on narrower desktops.
+  const logoScale = Math.max(MIN_LOGO_SCALE, Math.min(1, containerWidth / DESIGN_W));
+  const clusterCenter = useMemo(() => {
+    let sx = 0;
+    let sy = 0;
+    organizations.forEach((org) => {
+      sx += org.x;
+      sy += org.y;
+    });
+    const count = organizations.length || 1;
+    return {
+      cx: containerWidth * CLUSTER_X + (sx / count) * logoScale,
+      cy: DESIGN_H * CLUSTER_Y + (sy / count) * logoScale,
+    };
+  }, [containerWidth, logoScale]);
+  const logoGeom = useMemo(() => {
+    const map = new Map<string, { cx: number; cy: number; size: number; rotate: number }>();
+    organizations.forEach((org) => {
+      map.set(org.id, {
+        cx: containerWidth * CLUSTER_X + org.x * logoScale,
+        cy: DESIGN_H * CLUSTER_Y + org.y * logoScale,
+        size: org.size * logoScale,
+        rotate: org.rotate,
+      });
+    });
+    return map;
+  }, [containerWidth, logoScale]);
 
   useEffect(() => {
     openIdRef.current = openId;
@@ -459,7 +833,8 @@ export const Experience = () => {
       h: number;
       logoCx: number;
       logoCy: number;
-      logoR: number;
+      logoSize: number;
+      logoRotate: number;
       angle: number;
     }
 
@@ -467,16 +842,15 @@ export const Experience = () => {
 
     experiences.forEach((exp) => {
       const card = cardRefs.current[exp.id];
-      const logo = logoRefs.current[exp.organizationId];
-      if (!card || !logo) return;
+      const geom = logoGeom.get(exp.organizationId);
+      if (!card || !geom) return;
 
       const c = card.getBoundingClientRect();
-      const l = logo.getBoundingClientRect();
 
       const cx = c.left - base.left + c.width / 2;
       const cy = c.top - base.top + c.height / 2;
-      const logoCx = l.left - base.left + l.width / 2;
-      const logoCy = l.top - base.top + l.height / 2;
+      const logoCx = geom.cx;
+      const logoCy = geom.cy;
 
       let angle = Math.atan2(cy - logoCy, cx - logoCx);
       if (angle > BOTTOM_FROM && angle < BOTTOM_TO) {
@@ -492,7 +866,8 @@ export const Experience = () => {
         h: c.height,
         logoCx,
         logoCy,
-        logoR: l.width / 2,
+        logoSize: geom.size,
+        logoRotate: geom.rotate,
         angle,
       });
     });
@@ -520,10 +895,19 @@ export const Experience = () => {
 
     const next: LeaderLine[] = raws
       .map((raw) => {
-        const x2 = raw.logoCx + Math.cos(raw.angle) * (raw.logoR + 4);
-        const y2 = raw.logoCy + Math.sin(raw.angle) * (raw.logoR + 4);
-        const start = rectEdgePoint(raw.cx, raw.cy, raw.w, raw.h, x2, y2);
-        return { expId: raw.expId, orgId: raw.orgId, x1: start.x, y1: start.y, x2, y2 };
+        // Anchor on the rotated logo edge along the final (spread) direction.
+        const dirX = raw.logoCx + Math.cos(raw.angle) * 1000;
+        const dirY = raw.logoCy + Math.sin(raw.angle) * 1000;
+        const end = rotatedEdgePoint(
+          raw.logoCx,
+          raw.logoCy,
+          raw.logoSize,
+          raw.logoRotate,
+          dirX,
+          dirY
+        );
+        const start = rectEdgePoint(raw.cx, raw.cy, raw.w, raw.h, end.x, end.y);
+        return { expId: raw.expId, orgId: raw.orgId, x1: start.x, y1: start.y, x2: end.x, y2: end.y };
       })
       .filter(
         (line) =>
@@ -534,7 +918,7 @@ export const Experience = () => {
       );
 
     setLines(next);
-  }, []);
+  }, [logoGeom]);
 
   useEffect(() => {
     if (!isDesktop) return;
@@ -585,19 +969,17 @@ export const Experience = () => {
     const container = containerRef.current;
     if (!container) return;
 
-    const base = container.getBoundingClientRect();
     const cw = containerWidth;
 
     const obstacles: Box[] = [];
     organizations.forEach((org) => {
-      const logo = logoRefs.current[org.id];
-      if (logo) {
-        const r = logo.getBoundingClientRect();
+      const geom = logoGeom.get(org.id);
+      if (geom) {
         obstacles.push({
-          cx: r.left - base.left + r.width / 2,
-          cy: r.top - base.top + r.height / 2,
-          w: r.width,
-          h: r.height,
+          cx: geom.cx,
+          cy: geom.cy,
+          w: geom.size,
+          h: geom.size,
         });
       }
     });
@@ -660,7 +1042,7 @@ export const Experience = () => {
     });
 
     return () => cancelAnimationFrame(handle);
-  }, [isDesktop, openId, cardSizes, containerWidth]);
+  }, [isDesktop, openId, cardSizes, containerWidth, logoGeom]);
 
   useEffect(() => {
     if (!isDesktop) return;
@@ -681,32 +1063,32 @@ export const Experience = () => {
     };
   }, [isDesktop, openId, cardSizes, containerWidth, offsets, entered, measureLines, prefersReduced, measureVersion]);
 
-  useEffect(() => {
-    if (!isDesktop) return;
-    const timer = window.setTimeout(() => {
-      const rects: { name: string; r: DOMRect }[] = [];
-      experiences.forEach((exp) => {
-        const el = cardRefs.current[exp.id];
-        if (el) rects.push({ name: `card:${exp.id}`, r: el.getBoundingClientRect() });
-      });
-      for (let i = 0; i < rects.length; i += 1) {
-        for (let j = i + 1; j < rects.length; j += 1) {
-          const a = rects[i];
-          const b = rects[j];
-          const overlaps =
-            a.r.left < b.r.right &&
-            b.r.left < a.r.right &&
-            a.r.top < b.r.bottom &&
-            b.r.top < a.r.bottom;
-          if (overlaps) console.warn(`[Experience] layout overlap: ${a.name} ∩ ${b.name}`);
-        }
-      }
-    }, TRANSITION_MS + 120);
-    return () => window.clearTimeout(timer);
-  }, [isDesktop, openId]);
-
   const isDimmed = (orgId: string) => effectiveOrg !== null && effectiveOrg !== orgId;
   const logoTransition = prefersReduced ? 'none' : 'opacity 250ms ease';
+
+  const overrideFor = (org: OrganizationData): TooltipPlacement | undefined => org.tooltipPlacement;
+
+  // Mobile: no room-based scoring (small screens, no cluster); keep a simple,
+  // deterministic side that never points straight into the wrapper center.
+  const mobilePlacements = useMemo(() => {
+    const map = new Map<string, TooltipPlacement>();
+    const xs = organizations.map((org) => org.x);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    organizations.forEach((org, index) => {
+      if (org.tooltipPlacement) {
+        map.set(org.id, org.tooltipPlacement);
+        return;
+      }
+      if (maxX - minX < 1) {
+        map.set(org.id, index === 0 ? 'top' : 'bottom');
+        return;
+      }
+      const rel = (org.x - minX) / (maxX - minX);
+      map.set(org.id, rel < 0.5 ? 'bottom' : 'top');
+    });
+    return map;
+  }, []);
 
   return (
     <section
@@ -814,59 +1196,87 @@ export const Experience = () => {
             )}
 
             {organizations.map((org) => {
+              const g = logoGeom.get(org.id);
+              if (!g) return null;
               const related = effectiveOrg === org.id;
               const dim = effectiveOrg !== null && effectiveOrg !== org.id;
               return (
-                <Tooltip key={org.id} delay={0}>
-                  <Tooltip.Trigger
-                    data-org={org.id}
-                    aria-label={org.name}
+                <div key={org.id} style={{ display: 'contents' }}>
+                  <div
                     ref={(el) => {
-                      logoRefs.current[org.id] = el;
+                      logoTriggerRefs.current[org.id] = el;
                     }}
+                    data-org={org.id}
+                    className="org-logo-trigger"
+                    aria-label={org.name}
+                    tabIndex={0}
                     onMouseEnter={() => activateOrg(org.id)}
                     onMouseLeave={deactivateOrg}
                     onFocus={() => activateOrg(org.id)}
                     onBlur={deactivateOrg}
                     style={{
                       position: 'absolute',
-                      left: `${org.x}%`,
-                      top: `${(org.y / 100) * DESIGN_H}px`,
+                      left: `${g.cx}px`,
+                      top: `${g.cy}px`,
                       transform: 'translate(-50%, -50%)',
-                      width: `${org.size}px`,
-                      height: `${org.size}px`,
-                      borderRadius: '20px',
-                      background: 'var(--bg-page-light)',
-                      border: '1px solid var(--border-subtle)',
-                      boxShadow: related
-                        ? '0 16px 34px rgba(10, 16, 4, 0.26)'
-                        : '0 12px 28px rgba(10, 16, 4, 0.18)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '12px',
+                      width: `${g.size}px`,
+                      height: `${g.size}px`,
                       zIndex: LAYERS.logo,
-                      opacity: !entered ? 0 : dim ? 0.5 : 1,
-                      transition: logoTransition,
                     }}
                   >
-                    <img
-                      src={org.logo}
-                      alt=""
-                      onLoad={bumpMeasure}
+                    <div
                       style={{
                         width: '100%',
                         height: '100%',
-                        objectFit: 'contain',
-                        transform: related && !prefersReduced ? 'scale(1.1)' : 'scale(1)',
-                        transition: prefersReduced ? 'none' : 'transform 250ms ease',
+                        borderRadius: '20px',
+                        background: 'var(--bg-page-light)',
+                        border: '1px solid var(--border-subtle)',
+                        boxShadow: related
+                          ? '0 16px 34px rgba(10, 16, 4, 0.26)'
+                          : '0 12px 28px rgba(10, 16, 4, 0.18)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '12px',
+                        transform: `rotate(${g.rotate}deg)`,
+                        opacity: !entered ? 0 : dim ? 0.5 : 1,
+                        transition: logoTransition,
                       }}
+                    >
+                      <img
+                        src={org.logo}
+                        alt=""
+                        width={200}
+                        height={200}
+                        loading="lazy"
+                        decoding="async"
+                        onLoad={bumpMeasure}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain',
+                          transform: related && !prefersReduced ? 'scale(1.1)' : 'scale(1)',
+                          transition: prefersReduced ? 'none' : 'transform 250ms ease',
+                        }}
+                      />
+                    </div>
+                  </div>
+                  {related && activeOrgId === org.id && (
+                    <OrgTooltip
+                      label={org.name}
+                      triggerRefs={logoTriggerRefs}
+                      orgId={org.id}
+                      center={clusterCenter}
+                      containerRef={containerRef}
+                      cardRefs={cardRefs}
+                      logoTriggerRefs={logoTriggerRefs}
+                      lineList={lines}
+                      activeOrgId={activeOrgId}
+                      override={overrideFor(org)}
+                      version={measureVersion}
                     />
-                  </Tooltip.Trigger>
-                  <Tooltip.Content placement="top" offset={10}>
-                    {org.name}
-                  </Tooltip.Content>
-                </Tooltip>
+                  )}
+                </div>
               );
             })}
 
@@ -931,9 +1341,17 @@ export const Experience = () => {
               }}
             >
               {organizations.map((org) => (
-                <Tooltip key={org.id} delay={0}>
-                  <Tooltip.Trigger
+                <div key={org.id} style={{ display: 'contents' }}>
+                  <div
+                    ref={(el) => {
+                      mobileLogoTriggerRefs.current[org.id] = el;
+                    }}
+                    data-org={org.id}
+                    className="org-logo-trigger"
                     aria-label={org.name}
+                    tabIndex={0}
+                    onFocus={() => activateOrg(org.id)}
+                    onBlur={deactivateOrg}
                     style={{
                       width: '64px',
                       height: '64px',
@@ -949,13 +1367,29 @@ export const Experience = () => {
                     <img
                       src={org.logo}
                       alt=""
+                      width={200}
+                      height={200}
+                      loading="lazy"
+                      decoding="async"
                       style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                     />
-                  </Tooltip.Trigger>
-                  <Tooltip.Content placement="top" offset={8}>
-                    {org.name}
-                  </Tooltip.Content>
-                </Tooltip>
+                  </div>
+                  {activeOrgId === org.id && (
+                    <OrgTooltip
+                      label={org.name}
+                      triggerRefs={mobileLogoTriggerRefs}
+                      orgId={org.id}
+                      center={{ cx: 0, cy: 0 }}
+                      containerRef={containerRef}
+                      cardRefs={cardRefs}
+                      logoTriggerRefs={mobileLogoTriggerRefs}
+                      lineList={[]}
+                      activeOrgId={activeOrgId}
+                      override={mobilePlacements.get(org.id) ?? 'bottom'}
+                      version={measureVersion}
+                    />
+                  )}
+                </div>
               ))}
             </div>
 

@@ -31,6 +31,8 @@ export interface ProjectData {
   metrics: { value: string; label: string }[];
 }
 
+export type TooltipPlacement = 'top' | 'bottom' | 'left' | 'right';
+
 export interface OrganizationData {
   id: string;
   name: string;
@@ -39,6 +41,8 @@ export interface OrganizationData {
   x: number;
   y: number;
   size: number;
+  rotate: number;
+  tooltipPlacement?: TooltipPlacement;
 }
 
 export interface ExperienceData {

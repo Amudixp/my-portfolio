@@ -6,7 +6,7 @@ import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { ScrollToTop } from './components/common/ScrollToTop';
 import { Hero } from './components/sections/Hero';
 import { useMediaQuery } from './hooks/useMediaQuery';
-import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { ThemeProvider } from './context/ThemeContext';
 
 const About = lazy(() => import('./components/sections/About').then(m => ({ default: m.About })));
 const Experience = lazy(() => import('./components/sections/Experience').then(m => ({ default: m.Experience })));
@@ -16,17 +16,16 @@ const Contact = lazy(() => import('./components/sections/Contact').then(m => ({ 
 
 function MainAppContent() {
   const isDesktop = useMediaQuery('(min-width: 1024px)');
-  const { theme } = useTheme();
 
   return (
     <div style={{ 
-      backgroundColor: theme === 'light' ? 'var(--bg-page)' : 'var(--bg-page)', 
-      color: theme === 'light' ? 'var(--text-primary)' : 'var(--text-primary)', 
+      backgroundColor: 'var(--bg-page)', 
+      color: 'var(--text-primary)', 
       fontFamily: 'var(--font-body)', 
       overflowX: 'hidden', 
       width: '100%', 
-      maxWidth: '100vw',
-      transition: 'background-color 0.3s ease, color 0.3s ease'
+      maxWidth: '100%',
+      transition: 'background-color 0.3s ease'
     }}>
       {/* Skip to Content — Accessibility */}
       <a
@@ -57,7 +56,7 @@ function MainAppContent() {
         id="main-content" 
         style={{ 
           paddingLeft: '0px', 
-          paddingTop: isDesktop ? '0px' : '65px', 
+          paddingTop: isDesktop ? '0px' : '69px', 
           overflowX: 'hidden', 
           width: '100%', 
           boxSizing: 'border-box'
@@ -65,7 +64,7 @@ function MainAppContent() {
         <ErrorBoundary>
           <Hero />
         </ErrorBoundary>
-        <Suspense fallback={null}>
+        <Suspense fallback={<div style={{ minHeight: '70vh' }} aria-hidden="true" />}>
           <ErrorBoundary>
             <About />
           </ErrorBoundary>
@@ -81,8 +80,8 @@ function MainAppContent() {
           <ErrorBoundary>
             <Contact />
           </ErrorBoundary>
+          <Footer />
         </Suspense>
-        <Footer />
       </main>
       <ScrollToTop />
     </div>

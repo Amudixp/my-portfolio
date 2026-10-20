@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Mail, Linkedin, Github } from 'lucide-react';
 import { profile } from '../../data/profile';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -10,6 +10,8 @@ import BorderGlow from '../ui/BorderGlow';
 
 export const Contact = () => {
   const isSmallScreen = useMediaQuery('(max-width: 767px)');
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
+  const shouldReduceMotion = useReducedMotion();
   const [isFlipped, setIsFlipped] = useState(false);
   const contactSectionRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
@@ -43,7 +45,7 @@ export const Contact = () => {
   return (
     <section id="contact" ref={contactSectionRef} style={{ padding: isSmallScreen ? '60px 16px' : '90px 40px', backgroundColor: isLight ? 'var(--bg-page)' : 'var(--bg-page)', display: 'flex', alignItems: 'center', position: 'relative', overflow: 'hidden', transition: 'background-color 0.3s ease' }}>
       {/* Background Decorative Elements */}
-      {!isSmallScreen && (
+      {isDesktop && (
       <svg style={{ position: 'absolute', top: '0', right: '0', opacity: 0.05, width: '400px', height: '400px', pointerEvents: 'none' }} viewBox="0 0 200 200">
         <defs>
           <linearGradient id="codeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -77,8 +79,8 @@ export const Contact = () => {
         {/* Main Grid Layout */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: isSmallScreen ? '1fr' : '1fr 1fr',
-          gap: isSmallScreen ? '60px' : '100px',
+          gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr',
+          gap: isDesktop ? '100px' : '60px',
           alignItems: 'center'
         }}>
           {/* Left Column - Typography & CTAs */}
@@ -96,7 +98,7 @@ export const Contact = () => {
               fontFamily: 'Inter Tight, sans-serif', letterSpacing: '-0.02em',
               lineHeight: '1.1',
               marginBottom: '40px',
-              textAlign: isSmallScreen ? 'center' : 'left'
+              textAlign: isDesktop ? 'left' : 'center'
             }}>
               LET'S BUILD
               <br />
@@ -112,13 +114,13 @@ export const Contact = () => {
               lineHeight: '1.8',
               marginBottom: '40px',
               fontFamily: 'Inter, sans-serif',
-              textAlign: isSmallScreen ? 'center' : 'left'
+              textAlign: isDesktop ? 'left' : 'center'
             }}>
               Saya selalu terbuka untuk diskusi mengenai peluang magang Data/AI and Engineering, proyek kolaborasi, atau sekadar menyapa. Kotak masuk saya selalu terbuka!
             </p>
 
             {/* Primary CTA */}
-            <motion.div style={{ marginBottom: '30px', display: 'flex', justifyContent: isSmallScreen ? 'center' : 'flex-start' }}>
+            <motion.div style={{ marginBottom: '30px', display: 'flex', justifyContent: isDesktop ? 'flex-start' : 'center' }}>
               <motion.a 
                 href={profile.resume || `mailto:${profile.email}`}
                 target={profile.resume ? "_blank" : "_self"}
@@ -145,7 +147,7 @@ export const Contact = () => {
 
             {/* Secondary Contact Links - Circular Icon Buttons */}
             <motion.div 
-              style={{ display: 'flex', gap: '16px', justifyContent: isSmallScreen ? 'center' : 'flex-start', marginTop: '24px' }}
+              style={{ display: 'flex', gap: '16px', justifyContent: isDesktop ? 'flex-start' : 'center', marginTop: '24px' }}
               initial="hidden"
               whileInView="visible"
               variants={containerVariants}
@@ -161,8 +163,8 @@ export const Contact = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: isSmallScreen ? '40px' : '48px',
-                  height: isSmallScreen ? '40px' : '48px',
+                  width: isSmallScreen ? '44px' : '48px',
+                  height: isSmallScreen ? '44px' : '48px',
                   borderRadius: '9999px',
                   border: '2px solid var(--border-subtle)',
                   color: 'var(--text-secondary)',
@@ -198,8 +200,8 @@ export const Contact = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: isSmallScreen ? '40px' : '48px',
-                  height: isSmallScreen ? '40px' : '48px',
+                  width: isSmallScreen ? '44px' : '48px',
+                  height: isSmallScreen ? '44px' : '48px',
                   borderRadius: '9999px',
                   border: '2px solid var(--border-subtle)',
                   color: 'var(--text-secondary)',
@@ -235,8 +237,8 @@ export const Contact = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: isSmallScreen ? '40px' : '48px',
-                  height: isSmallScreen ? '40px' : '48px',
+                  width: isSmallScreen ? '44px' : '48px',
+                  height: isSmallScreen ? '44px' : '48px',
                   borderRadius: '9999px',
                   border: '2px solid var(--border-subtle)',
                   color: 'var(--text-secondary)',
@@ -262,7 +264,7 @@ export const Contact = () => {
           </motion.div>
 
           {/* Right Column - Simple Flip Card */}
-          {!isSmallScreen && (
+          {isDesktop && (
             <motion.div
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -272,7 +274,7 @@ export const Contact = () => {
               
               {/* Background Radial Glow */}
               <motion.div
-                animate={{ scale: [1, 1.1, 1] }}
+                animate={shouldReduceMotion ? {} : { scale: [1, 1.1, 1] }}
                 transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
                 style={{
                   position: 'absolute',
@@ -285,7 +287,7 @@ export const Contact = () => {
 
               {/* Floating Card Container */}
               <motion.div
-                animate={{
+                animate={shouldReduceMotion ? {} : {
                   y: [0, -15, 0]
                 }}
                 transition={{
@@ -344,7 +346,10 @@ export const Contact = () => {
                       <img
                         src={profileImage}
                         alt="Amudi Purba"
+                        width={900}
+                        height={1200}
                         loading="lazy"
+                        decoding="async"
                         style={{
                           width: '100%',
                           height: '100%',
@@ -381,7 +386,10 @@ export const Contact = () => {
                       <img
                         src={qrLinkedin}
                         alt="LinkedIn QR Code"
+                        width={600}
+                        height={600}
                         loading="lazy"
+                        decoding="async"
                         style={{
                           width: '160px',
                           height: '160px',
@@ -434,7 +442,7 @@ export const Contact = () => {
                   </p>
                   
                   <motion.span
-                    animate={{ opacity: [0.7, 1, 0.7] }}
+                    animate={shouldReduceMotion ? {} : { opacity: [0.7, 1, 0.7] }}
                     transition={{ duration: 2, repeat: Infinity }}
                     style={{
                       fontSize: '12px',
@@ -454,7 +462,7 @@ export const Contact = () => {
           )}
 
           {/* Mobile Flip Card */}
-          {isSmallScreen && (
+          {!isDesktop && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -464,7 +472,7 @@ export const Contact = () => {
               
               {/* Floating Parent */}
               <motion.div
-                animate={{ y: [0, -12, 0] }}
+                animate={shouldReduceMotion ? {} : { y: [0, -12, 0] }}
                 transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
                 style={{ width: 'min(320px, calc(100vw - 40px))', height: 'auto', aspectRatio: '320/380', perspective: '1200px' }}>
                 
@@ -511,7 +519,10 @@ export const Contact = () => {
                       <img
                         src={profileImage}
                         alt="Amudi Purba"
+                        width={900}
+                        height={1200}
                         loading="lazy"
+                        decoding="async"
                         style={{
                           width: '100%',
                           height: '100%',
@@ -547,7 +558,10 @@ export const Contact = () => {
                       <img
                         src={qrLinkedin}
                         alt="LinkedIn QR Code"
+                        width={600}
+                        height={600}
                         loading="lazy"
+                        decoding="async"
                         style={{
                           width: '120px',
                           height: '120px',
@@ -598,7 +612,7 @@ export const Contact = () => {
                   </p>
                   
                   <motion.span
-                    animate={{ opacity: [0.7, 1, 0.7] }}
+                    animate={shouldReduceMotion ? {} : { opacity: [0.7, 1, 0.7] }}
                     transition={{ duration: 2, repeat: Infinity }}
                     style={{
                       fontSize: '11px',

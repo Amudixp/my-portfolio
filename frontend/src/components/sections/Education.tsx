@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { MouseEvent } from 'react';
 import { motion } from 'framer-motion';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -7,20 +7,29 @@ import { useTheme } from '../../context/ThemeContext';
 
 export const Education = () => {
   const isSmallScreen = useMediaQuery('(max-width: 767px)');
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const glowRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
   const { theme } = useTheme();
   const isLight = theme === 'light';
 
   const handleMouseMove = (e: MouseEvent) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    setMousePos({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
+    if (rafRef.current !== null) return;
+    const { clientX, clientY } = e;
+    rafRef.current = window.requestAnimationFrame(() => {
+      rafRef.current = null;
+      const el = glowRef.current;
+      const container = containerRef.current;
+      if (!el || !container) return;
+      const rect = container.getBoundingClientRect();
+      el.style.background = `radial-gradient(600px at ${clientX - rect.left}px ${clientY - rect.top}px, rgba(59, 82, 23, 0.06), transparent 70%)`;
     });
   };
+
+  useEffect(() => () => {
+    if (rafRef.current !== null) window.cancelAnimationFrame(rafRef.current);
+  }, []);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -53,21 +62,18 @@ export const Education = () => {
         transition: 'background-color 0.3s ease'
       }}>
       
-      {/* Cursor-following glow background */}
-      <motion.div
-        animate={{
-          background: `radial-gradient(600px at ${mousePos.x}px ${mousePos.y}px, ${'rgba(59, 82, 23, 0.06)'}, transparent 70%)`
-        }}
+      {/* Cursor-following glow background (kept inside the section, updated without re-rendering) */}
+      <div
+        ref={glowRef}
         style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
+          position: 'absolute',
+          inset: 0,
           width: '100%',
           height: '100%',
           pointerEvents: 'none',
-          zIndex: 0
+          zIndex: 0,
+          background: 'radial-gradient(600px at 50% 50%, rgba(59, 82, 23, 0.06), transparent 70%)'
         }}
-        transition={{ type: 'tween', ease: 'linear', duration: 0 }}
       />
 
       <div

@@ -152,6 +152,10 @@ export const Navbar = () => {
           <img
             src={sidebarProfile}
             alt="Amudi Purba"
+            width={128}
+            height={128}
+            loading="eager"
+            decoding="async"
             style={{ width: '36px', height: '36px', borderRadius: '8px', border: '1px solid var(--border-subtle)', objectFit: 'cover', objectPosition: '50% 38%' }}
           />
         </a>

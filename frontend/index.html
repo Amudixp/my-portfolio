@@ -33,13 +33,9 @@
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/favicon.png" />
 
-    <!-- Font Preload (Critical fonts loaded first, others deferred) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Inter+Tight:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
-    <noscript>
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Inter+Tight:wght@400;500&display=swap" rel="stylesheet" />
-    </noscript>
+    <!-- Self-hosted fonts: preload the two latin subsets used above the fold -->
+    <link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/inter-tight-latin.woff2" as="font" type="font/woff2" crossorigin />
 
     <!-- Theme Color for Mobile Browsers -->
     <meta name="theme-color" content="#1C2A07" />

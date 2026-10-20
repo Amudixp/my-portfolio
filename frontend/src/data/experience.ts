@@ -3,33 +3,38 @@ import itbLogo from '../assets/images/itb_logo.webp';
 import akhdaniLogo from '../assets/images/akhdani_logo.webp';
 import type { ExperienceData, OrganizationData } from '../types';
 
+// Desktop cluster layout: x/y are pixel offsets from the cluster center
+// (design space), size is the square box in px, rotate is the tilt in degrees.
 export const organizations: OrganizationData[] = [
   {
     id: 'akhdani',
     name: 'PT Akhdani Reka Solusi',
     shortName: 'PT Akhdani Reka Solusi',
     logo: akhdaniLogo,
-    x: 30,
-    y: 64,
-    size: 68
+    x: -30,
+    y: 58,
+    size: 66,
+    rotate: -2
   },
   {
     id: 'itb',
     name: 'Institut Teknologi Bandung (ITB)',
     shortName: 'Institut Teknologi Bandung',
     logo: itbLogo,
-    x: 50,
-    y: 30,
-    size: 96
+    x: -40,
+    y: -34,
+    size: 100,
+    rotate: -5
   },
   {
     id: 'tec',
     name: 'Techno Entrepreneurship Club ITB',
     shortName: 'Techno Entrepreneurship Club',
     logo: tecLogo,
-    x: 70,
-    y: 64,
-    size: 76
+    x: 54,
+    y: 14,
+    size: 78,
+    rotate: 4
   }
 ];
 

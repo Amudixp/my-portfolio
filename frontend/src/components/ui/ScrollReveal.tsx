@@ -15,6 +15,7 @@ interface ScrollRevealProps {
   containerClassName?: string;
   textClassName?: string;
   style?: CSSProperties;
+  wordChunkSize?: number;
 }
 
 const ScrollReveal: React.FC<ScrollRevealProps> = ({
@@ -25,40 +26,59 @@ const ScrollReveal: React.FC<ScrollRevealProps> = ({
   baseRotation = 1,
   blurStrength = 4,
   containerClassName = '',
-  style = {}
+  style = {},
+  wordChunkSize = 1
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
+  const reduceMotion = useMemo(
+    () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    []
+  );
+
   const splitText = useMemo(() => {
     const text = typeof children === 'string' ? children : '';
-    return text.split(/(\s+)/).map((word, index) => {
-      if (word.match(/^\s+$/)) return word;
-      return (
-        <span 
-          className="inline-block word" 
+    if (!text) return text;
+    const words = text.split(/\s+/).filter(Boolean);
+    const chunkSize = Math.max(1, Math.floor(wordChunkSize));
+    const chunks: string[][] = [];
+    for (let i = 0; i < words.length; i += chunkSize) {
+      chunks.push(words.slice(i, i + chunkSize));
+    }
+    const nodes: ReactNode[] = [];
+    chunks.forEach((chunk, index) => {
+      nodes.push(
+        <span
+          className="inline-block word"
           key={index}
           style={{
             display: 'inline-block',
-            opacity: baseOpacity,
+            opacity: reduceMotion ? 1 : baseOpacity,
             color: 'inherit',
-            filter: enableBlur ? `blur(${blurStrength}px)` : 'blur(0px)',
+            filter: reduceMotion ? 'blur(0px)' : enableBlur ? `blur(${blurStrength}px)` : 'blur(0px)',
             transition: 'none'
           }}
         >
-          {word}
+          {chunk.join(' ')}
         </span>
       );
+      if (index < chunks.length - 1) nodes.push(' ');
     });
-  }, [children, baseOpacity, blurStrength, enableBlur]);
+    return nodes;
+  }, [children, baseOpacity, blurStrength, enableBlur, reduceMotion, wordChunkSize]);
 
   useEffect(() => {
     const el = containerRef.current;
-    if (!el) return;
+    if (!el || reduceMotion) return;
     
     const scroller = scrollContainerRef && scrollContainerRef.current ? scrollContainerRef.current : window;
+    const triggers: ScrollTrigger[] = [];
+    const track = (tween: ReturnType<typeof gsap.fromTo>) => {
+      if (tween.scrollTrigger) triggers.push(tween.scrollTrigger);
+    };
     
     // Container rotation animation
-    gsap.fromTo(
+    track(gsap.fromTo(
       el,
       { transformOrigin: '0% 50%', rotate: baseRotation },
       {
@@ -73,12 +93,12 @@ const ScrollReveal: React.FC<ScrollRevealProps> = ({
           markers: false
         }
       }
-    );
+    ));
     
     const wordElements = el.querySelectorAll<HTMLElement>('.word');
     
     // Word opacity animation
-    gsap.fromTo(
+    track(gsap.fromTo(
       wordElements,
       { opacity: baseOpacity },
       {
@@ -95,11 +115,11 @@ const ScrollReveal: React.FC<ScrollRevealProps> = ({
           markers: false
         }
       }
-    );
+    ));
     
     // Word blur animation
     if (enableBlur) {
-      gsap.fromTo(
+      track(gsap.fromTo(
         wordElements,
         { filter: `blur(${blurStrength}px)` },
         {
@@ -116,13 +136,13 @@ const ScrollReveal: React.FC<ScrollRevealProps> = ({
             markers: false
           }
         }
-      );
+      ));
     }
     
     return () => {
-      ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+      triggers.forEach((trigger) => trigger.kill());
     };
-  }, [scrollContainerRef, enableBlur, baseRotation, baseOpacity, blurStrength]);
+  }, [scrollContainerRef, enableBlur, baseRotation, baseOpacity, blurStrength, reduceMotion]);
 
   return (
     <div 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import heroBg from '../../assets/images/hero-bg.webp';
@@ -7,6 +7,7 @@ import heroBg from '../../assets/images/hero-bg.webp';
 export const Hero = () => {
   const isSmallScreen = useMediaQuery('(max-width: 1023px)');
   const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
   const { scrollY } = useScroll();
 
   // As user scrolls from top (0px) to 450px, the black overlay smoothly fades in from 0 to 1
@@ -25,45 +26,56 @@ export const Hero = () => {
       width: '100%'
     }}>
 
-      {/* LAYER 0: Luminous Hero Background Image */}
-      <motion.div style={{
-        position: 'absolute',
-        inset: 0,
-        zIndex: 0,
-        backgroundColor: '#0A0A0A',
-        backgroundImage: isImageLoaded ? `url(${heroBg})` : 'none',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        pointerEvents: 'none',
-        transition: 'opacity 0.8s ease-in-out',
-        opacity: isImageLoaded ? 0.85 : 0,
-        scale: heroImageScale
-      }} />
-
-      {/* Hidden img element to detect when background loads */}
-      <img
+      {/* LAYER 0: Hero background rendered as a real <img> so it is painted
+          immediately as an LCP candidate and fetched at high priority. */}
+      <motion.img
         src={heroBg}
         alt=""
         aria-hidden="true"
+        width={1280}
+        height={853}
+        loading="eager"
+        fetchPriority="high"
+        decoding="async"
         onLoad={() => setIsImageLoaded(true)}
-        style={{ display: 'none' }}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          objectPosition: 'center',
+          backgroundColor: '#0A0A0A',
+          pointerEvents: 'none',
+          zIndex: 0,
+          opacity: 0.85,
+          scale: heroImageScale
+        }}
       />
 
-      {/* Loading placeholder with GPU-composited pulse */}
-      {!isImageLoaded && (
-        <motion.div
-          animate={{ opacity: [0.3, 0.7, 0.3] }}
-          transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            zIndex: 0,
-            backgroundColor: 'var(--surface-dark)',
-            pointerEvents: 'none',
-          }}
-        />
-      )}
+      {/* Loading placeholder — stays mounted and crossfades out to avoid a flash */}
+      <motion.div
+        aria-hidden="true"
+        animate={
+          isImageLoaded
+            ? { opacity: 0 }
+            : shouldReduceMotion
+              ? { opacity: 0.7 }
+              : { opacity: [0.3, 0.7, 0.3] }
+        }
+        transition={
+          isImageLoaded
+            ? { duration: 0.5, ease: 'easeOut' }
+            : { duration: 1.5, repeat: shouldReduceMotion ? 0 : Infinity, ease: 'easeInOut' }
+        }
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 0,
+          backgroundColor: 'var(--surface-dark)',
+          pointerEvents: 'none',
+        }}
+      />
 
       {/* LAYER 1: Subtle Top Gradient Overlay */}
       <div style={{
@@ -86,11 +98,11 @@ export const Hero = () => {
         }}
       />
 
-      {/* LAYER 3: Main Content Container */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1 }}
+      {/* LAYER 3: Main Content Container
+          NOTE: The hero heading is the LCP element — it must be painted at
+          first render. We therefore animate only `y` (a composited transform)
+          and never gate it behind opacity: 0, so Lighthouse can detect it. */}
+      <div
         style={{
           maxWidth: '1000px',
           width: '100%',
@@ -105,16 +117,16 @@ export const Hero = () => {
 
         {/* Content - Name & Headline */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.8 }}
+          initial={{ y: 30 }}
+          animate={{ y: 0 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', maxWidth: '850px' }}
         >
-          {/* Main Heading */}
+          {/* Main Heading (LCP element — visible on first paint) */}
           <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.8 }}
+            initial={{ y: 20 }}
+            animate={{ y: 0 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             style={{
               fontSize: isSmallScreen ? 'clamp(32px, 8vw, 44px)' : '64px',
               fontWeight: '500',
@@ -159,7 +171,7 @@ export const Hero = () => {
           </motion.div>
         </motion.div>
 
-      </motion.div>
+      </div>
     </section>
   );
 };
