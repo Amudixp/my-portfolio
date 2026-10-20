@@ -46,6 +46,12 @@ export interface OrganizationData {
   tooltipPlacement?: TooltipPlacement;
 }
 
+/** Structured start/end for sorting. `endDate: null` means ongoing ("Present"). */
+export interface ExperienceDatePoint {
+  year: number;
+  month: number;
+}
+
 export interface ExperienceData {
   id: number;
   year: string;
@@ -54,6 +60,8 @@ export interface ExperienceData {
   organizationId: string;
   description: string;
   tags: string[];
+  startDate?: ExperienceDatePoint;
+  endDate?: ExperienceDatePoint | null;
 }
 
 export interface CertificationData {

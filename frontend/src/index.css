@@ -39,6 +39,17 @@
      carousel height stays constant between slides and the indicator row never
      jumps. Change this single value to retune the media shape. */
   --project-media-ratio: 16 / 9;
+  /* Mobile Experience timeline cards. Solid deep-green surfaces (derived from
+     --surface-dark) so they read as one family with the desktop active card,
+     instead of the translucent grey-green glass used on desktop. */
+  --exp-card-bg: #24330C;
+  --exp-card-bg-open: #1C2A07;
+  --exp-card-border: #4A6620;
+  --exp-card-border-open: rgba(226, 250, 106, 0.6);
+  --exp-card-text-muted: #D7E4BE;
+  --exp-card-chip: #35470F;
+  --exp-timeline-line: rgba(74, 102, 32, 0.75);
+  --exp-timeline-dot: #4A6620;
 }
 
 @media (max-width: 1023px) {
@@ -201,3 +212,62 @@ h1, h2, h3, h4, h5, h6 {
   outline: 2px solid var(--accent-lime);
   outline-offset: 3px;
 }
+
+/* Mobile (< 1200px) Experience timeline: narrow marker rail + stacked cards. */
+.experience-timeline {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Vertical connector: spans from the first dot centre to the last dot centre.
+   Decorative only — must never intercept taps. */
+.experience-timeline::before {
+  content: '';
+  position: absolute;
+  left: 18px;
+  top: 22px;
+  bottom: 22px;
+  width: 2px;
+  transform: translateX(-1px);
+  background: var(--exp-timeline-line);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+.experience-timeline__item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: start;
+}
+
+.experience-timeline__aside {
+  display: flex;
+  justify-content: center;
+  padding-top: 16px;
+  pointer-events: none;
+}
+
+.experience-timeline__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  border: 2px solid var(--exp-timeline-dot);
+  background: var(--bg-page);
+  transition: background-color 200ms ease, transform 200ms ease;
+}
+
+.experience-timeline__item.is-open .experience-timeline__dot {
+  background: var(--exp-timeline-dot);
+  transform: scale(1.2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .experience-timeline__dot {
+    transition: none !important;
+  }
+}
+

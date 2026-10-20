@@ -45,6 +45,8 @@ export const experiences: ExperienceData[] = [
     title: 'Quality Assurance',
     organization: 'PT Akhdani Reka Solusi Bandung, Indonesia',
     organizationId: 'akhdani',
+    startDate: { year: 2026, month: 6 },
+    endDate: { year: 2026, month: 8 },
     description: 'Identified and documented 40+ software defects across the testing lifecycle, reducing production bug risk and contributing to a stable pre-release product. Validated that features met business requirements and quality standards before release.',
     tags: ['Quality Assurance', 'Software Testing', 'Defect Tracking', 'Requirements Validation']
   },
@@ -54,6 +56,8 @@ export const experiences: ExperienceData[] = [
     title: 'Computational Thinking Lab Assistant',
     organization: 'Institut Teknologi Bandung (ITB)',
     organizationId: 'itb',
+    startDate: { year: 2025, month: 9 },
+    endDate: { year: 2025, month: 12 },
     description: 'Evaluated Python programming assignments and provided feedback on computational thinking concepts. Evaluated the code of practical results and supervised practical experimental demonstrations.',
     tags: ['Python', 'Computational Thinking', 'Code Evaluation', 'Mentoring']
   },
@@ -63,6 +67,8 @@ export const experiences: ExperienceData[] = [
     title: 'Data Migration Staff',
     organization: 'ITB Education Directorate',
     organizationId: 'itb',
+    startDate: { year: 2025, month: 7 },
+    endDate: { year: 2025, month: 8 },
     description: 'Executed data migration workflows and validated dataset integrity for academic administrative systems. Evaluated practical code execution and data processing scripts.',
     tags: ['Data Migration', 'Python', 'Data Integrity', 'System Administration']
   },
@@ -72,6 +78,8 @@ export const experiences: ExperienceData[] = [
     title: 'Basic Physics Lab Assistant',
     organization: 'ITB 2024, LFD ITB',
     organizationId: 'itb',
+    startDate: { year: 2024, month: 9 },
+    endDate: { year: 2024, month: 11 },
     description: 'Improved report quality and student comprehension through structured evaluation and feedback mechanisms. Enhanced laboratory learning effectiveness by guiding students through experimental procedures and scientific reasoning.',
     tags: ['Physics', 'Academic Mentoring', 'Scientific Reasoning', 'Evaluation']
   },
@@ -81,6 +89,8 @@ export const experiences: ExperienceData[] = [
     title: 'IT TECFest 2025 Staff',
     organization: 'Techno Entrepreneurship Club ITB',
     organizationId: 'tec',
+    startDate: { year: 2025, month: 5 },
+    endDate: { year: 2025, month: 12 },
     description: 'Managed technical operations and event execution for TECFest 2025. Ensured smooth digital infrastructure and participant evaluation workflows during the flagship event.',
     tags: ['Event Technology', 'Operational Coordination', 'Techno Entrepreneurship']
   },
@@ -90,6 +100,8 @@ export const experiences: ExperienceData[] = [
     title: 'Board of Director',
     organization: 'Techno Entrepreneurship Club ITB',
     organizationId: 'tec',
+    startDate: { year: 2024, month: 12 },
+    endDate: null,
     description: 'Led governance structuring initiatives to ensure organizational sustainability and alignment with long-term strategic goals. Improved cross-division coordination efficiency, enabling smoother execution of club initiatives.',
     tags: ['Governance', 'Organizational Leadership', 'Strategic Planning', 'Management']
   }

@@ -5,6 +5,7 @@ import { motion, useInView, useReducedMotion } from 'framer-motion';
 import { Plus, X } from 'lucide-react';
 import { experiences, organizations } from '../../data/experience';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { sortExperiencesByDate } from '../../utils/experienceSort';
 import type { ExperienceData, OrganizationData, TooltipPlacement } from '../../types';
 
 interface CardLayout {
@@ -432,29 +433,45 @@ const cardStyle = (
   isOpen: boolean,
   active: boolean,
   dimmed: boolean,
-  prefersReduced: boolean
+  prefersReduced: boolean,
+  isTimeline: boolean
 ): CSSProperties => ({
   width: '100%',
   textAlign: 'left',
   display: 'flex',
   flexDirection: 'column',
-  gap: '14px',
-  background: active ? 'var(--surface-glass-dark)' : 'var(--surface-glass)',
-  backdropFilter: 'blur(8px)',
-  WebkitBackdropFilter: 'blur(8px)',
-  border: isOpen
-    ? '1px solid rgba(226, 250, 106, 0.55)'
+  gap: isTimeline ? '10px' : '14px',
+  background: isTimeline
+    ? isOpen
+      ? 'var(--exp-card-bg-open)'
+      : 'var(--exp-card-bg)'
     : active
-      ? '1px solid rgba(226, 250, 106, 0.30)'
-      : '1px solid rgba(255, 255, 255, 0.22)',
-  borderRadius: '22px',
-  padding: '22px 24px',
+      ? 'var(--surface-glass-dark)'
+      : 'var(--surface-glass)',
+  backdropFilter: isTimeline ? undefined : 'blur(8px)',
+  WebkitBackdropFilter: isTimeline ? undefined : 'blur(8px)',
+  border: isTimeline
+    ? isOpen
+      ? '1px solid var(--exp-card-border-open)'
+      : '1px solid var(--exp-card-border)'
+    : isOpen
+      ? '1px solid rgba(226, 250, 106, 0.55)'
+      : active
+        ? '1px solid rgba(226, 250, 106, 0.30)'
+        : '1px solid rgba(255, 255, 255, 0.22)',
+  borderRadius: isTimeline ? '18px' : '22px',
+  padding: isTimeline ? '14px 16px' : '22px 24px',
   color: 'var(--text-on-dark)',
   cursor: 'pointer',
   fontFamily: 'var(--font-body)',
-  boxShadow: active
-    ? '0 18px 40px rgba(10, 16, 4, 0.35)'
-    : '0 14px 32px rgba(10, 16, 4, 0.22)',
+  touchAction: 'manipulation',
+  boxShadow: isTimeline
+    ? isOpen
+      ? '0 14px 30px rgba(28, 42, 7, 0.28)'
+      : '0 10px 24px rgba(28, 42, 7, 0.22)'
+    : active
+      ? '0 18px 40px rgba(10, 16, 4, 0.35)'
+      : '0 14px 32px rgba(10, 16, 4, 0.22)',
   transition: prefersReduced
     ? 'none'
     : 'background-color 250ms ease, border-color 250ms ease, box-shadow 250ms ease, opacity 250ms ease',
@@ -490,9 +507,10 @@ interface CardProps {
   settled: boolean;
   prefersReduced: boolean;
   showLogo: boolean;
+  isTimeline?: boolean;
   onToggle: () => void;
-  onActivate: () => void;
-  onDeactivate: () => void;
+  onActivate?: () => void;
+  onDeactivate?: () => void;
 }
 
 const ExperienceCard = ({
@@ -506,19 +524,23 @@ const ExperienceCard = ({
   settled,
   prefersReduced,
   showLogo,
+  isTimeline = false,
   onToggle,
   onActivate,
   onDeactivate,
 }: CardProps) => {
+  const ongoing = exp.endDate === null || /present|now|sekarang|current/i.test(exp.year);
   return (
     <motion.button
       type="button"
       className="experience-card"
       onClick={onToggle}
-      onMouseEnter={onActivate}
-      onMouseLeave={onDeactivate}
-      onFocus={onActivate}
-      onBlur={onDeactivate}
+      // Organization hover/active highlighting is a desktop-only affordance; on
+      // the mobile timeline the cards stay visually neutral.
+      onMouseEnter={isTimeline ? undefined : onActivate}
+      onMouseLeave={isTimeline ? undefined : onDeactivate}
+      onFocus={isTimeline ? undefined : onActivate}
+      onBlur={isTimeline ? undefined : onDeactivate}
       aria-expanded={isOpen}
       aria-controls={`experience-details-${exp.id}`}
       initial={prefersReduced ? false : { opacity: 0, y: 18 }}
@@ -528,22 +550,24 @@ const ExperienceCard = ({
         delay: prefersReduced || settled ? 0 : 0.15 + index * 0.06,
         ease: [0.16, 1, 0.3, 1],
       }}
-      style={cardStyle(isOpen, active, dimmed, prefersReduced)}
+      style={cardStyle(isOpen, active, dimmed, prefersReduced, isTimeline)}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
-        <div>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: isTimeline ? '10px' : '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: isTimeline ? '10px' : '0px', minWidth: 0, flex: 1 }}>
           {showLogo && org && (
             <div
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '44px',
-                height: '44px',
-                borderRadius: '12px',
+                flexShrink: 0,
+                width: isTimeline ? '34px' : '44px',
+                height: isTimeline ? '34px' : '44px',
+                borderRadius: isTimeline ? '9px' : '12px',
                 background: 'var(--bg-page-light)',
-                padding: '7px',
-                marginBottom: '12px',
+                padding: isTimeline ? '5px' : '7px',
+                marginBottom: isTimeline ? '0px' : '12px',
+                marginTop: isTimeline ? '2px' : '0px',
               }}
             >
               <img
@@ -557,51 +581,100 @@ const ExperienceCard = ({
               />
             </div>
           )}
-          <h3
-            style={{
-              margin: 0,
-              fontSize: '21px',
-              fontWeight: 500,
-              fontFamily: 'var(--font-heading)',
-              letterSpacing: '-0.02em',
-              lineHeight: 1.22,
-              color: '#FFFFFF',
-            }}
-          >
-            {exp.title}
-          </h3>
-          <p
-            style={{
-              margin: '8px 0 0 0',
-              fontSize: '14px',
-              fontWeight: 400,
-              color: 'rgba(255, 255, 255, 0.74)',
-              lineHeight: 1.4,
-            }}
-          >
-            {exp.organization}
-          </p>
-          <span style={{ display: 'inline-block', marginTop: '12px' }}>
-            <DatePill>{exp.year}</DatePill>
-          </span>
+          <div style={{ minWidth: 0 }}>
+            <h3
+              style={{
+                margin: 0,
+                fontSize: isTimeline ? '17px' : '21px',
+                fontWeight: 500,
+                fontFamily: 'var(--font-heading)',
+                letterSpacing: '-0.02em',
+                lineHeight: 1.22,
+                color: '#FFFFFF',
+                overflowWrap: 'anywhere',
+              }}
+            >
+              {exp.title}
+              {isTimeline && ongoing && (
+                <span
+                  style={{
+                    display: 'inline-block',
+                    verticalAlign: 'super',
+                    marginLeft: '6px',
+                    fontSize: '9px',
+                    fontWeight: 700,
+                    lineHeight: 1,
+                    letterSpacing: '0.4px',
+                    color: '#1C2A07',
+                    background: 'var(--accent-lime)',
+                    borderRadius: '999px',
+                    padding: '2px 6px',
+                  }}
+                >
+                  NOW
+                </span>
+              )}
+            </h3>
+            <p
+              style={{
+                margin: isTimeline ? '3px 0 0 0' : '8px 0 0 0',
+                fontSize: '14px',
+                fontWeight: 400,
+                color: isTimeline ? 'var(--exp-card-text-muted)' : 'rgba(255, 255, 255, 0.74)',
+                lineHeight: 1.4,
+                overflowWrap: 'anywhere',
+              }}
+            >
+              {exp.organization}
+            </p>
+            {!isTimeline && (
+              <span style={{ display: 'inline-block', marginTop: '12px' }}>
+                <DatePill>{exp.year}</DatePill>
+              </span>
+            )}
+          </div>
         </div>
 
         <span
           aria-hidden="true"
           style={{
             flexShrink: 0,
-            width: '32px',
-            height: '32px',
-            borderRadius: '50%',
+            width: isTimeline ? '44px' : '32px',
+            height: isTimeline ? '44px' : '32px',
+            marginTop: isTimeline ? '-6px' : 0,
+            marginRight: isTimeline ? '-6px' : 0,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: isOpen ? 'var(--accent-lime)' : 'rgba(255, 255, 255, 0.14)',
-            color: isOpen ? '#1C2A07' : '#E2FA6A',
-            transition: prefersReduced ? 'none' : 'background-color 250ms ease, color 250ms ease',
           }}
         >
-          {isOpen ? <X size={16} strokeWidth={2.5} /> : <Plus size={16} strokeWidth={2.5} />}
+          <span
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: isTimeline
+                ? isOpen
+                  ? 'var(--accent-lime)'
+                  : 'var(--exp-card-chip)'
+                : isOpen
+                  ? 'var(--accent-lime)'
+                  : 'rgba(255, 255, 255, 0.14)',
+              color: isTimeline
+                ? isOpen
+                  ? '#1C2A07'
+                  : 'var(--accent-lime)'
+                : isOpen
+                  ? '#1C2A07'
+                  : '#E2FA6A',
+              transition: prefersReduced ? 'none' : 'background-color 250ms ease, color 250ms ease',
+            }}
+          >
+            {isOpen ? <X size={16} strokeWidth={2.5} /> : <Plus size={16} strokeWidth={2.5} />}
+          </span>
         </span>
       </div>
 
@@ -615,8 +688,19 @@ const ExperienceCard = ({
         }}
         transition={{ duration: prefersReduced ? 0 : 0.25, ease: [0.16, 1, 0.3, 1] }}
         style={{ overflow: 'hidden' }}
+        aria-hidden={!isOpen}
+        onClick={(event) => {
+          // Tapping/selecting text inside the expanded content must not collapse
+          // the card; only the header (or the × target) toggles.
+          if (isTimeline) event.stopPropagation();
+        }}
       >
-        <p style={{ margin: 0, fontSize: '14px', lineHeight: 1.7, color: 'rgba(255, 255, 255, 0.82)' }}>
+        {isTimeline && (
+          <div style={{ marginBottom: '12px' }}>
+            <DatePill>{exp.year}</DatePill>
+          </div>
+        )}
+        <p style={{ margin: 0, fontSize: '14px', lineHeight: 1.7, color: isTimeline ? 'var(--exp-card-text-muted)' : 'rgba(255, 255, 255, 0.82)' }}>
           {exp.description}
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '14px' }}>
@@ -626,8 +710,8 @@ const ExperienceCard = ({
               style={{
                 padding: '5px 12px',
                 borderRadius: '999px',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                color: '#FFFFFF',
+                border: isTimeline ? '1px solid var(--exp-card-border)' : '1px solid rgba(255, 255, 255, 0.3)',
+                color: isTimeline ? 'var(--exp-card-text-muted)' : '#FFFFFF',
                 fontSize: '12px',
                 fontWeight: 400,
               }}
@@ -692,6 +776,9 @@ export const Experience = () => {
   const prefersReduced = useReducedMotion() ?? false;
 
   const orgById = useMemo(() => new Map(organizations.map((org) => [org.id, org])), []);
+  // Mobile renders cards chronologically (most recent first); desktop keeps the
+  // original hub order untouched.
+  const mobileExperiences = useMemo(() => sortExperiencesByDate(experiences), []);
 
   const [openId, setOpenId] = useState<number | null>(null);
   const [activeOrgId, setActiveOrgId] = useState<string | null>(null);
@@ -707,7 +794,6 @@ export const Experience = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const logoTriggerRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const mobileLogoTriggerRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const openIdRef = useRef<number | null>(null);
   const graceRef = useRef<number | null>(null);
 
@@ -801,6 +887,9 @@ export const Experience = () => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setOpenId(null);
     };
+    // "Click outside to close" is a desktop-only affordance. On touch, the
+    // synthetic pointerdown before click would close the card and the click
+    // would immediately re-open it, so the toggle could never collapse.
     const onDown = (event: PointerEvent) => {
       const target = event.target as Element | null;
       const inOrg = target?.closest?.('[data-org]');
@@ -813,12 +902,14 @@ export const Experience = () => {
       }
     };
     window.addEventListener('keydown', onKey);
-    document.addEventListener('pointerdown', onDown);
+    if (isDesktop) {
+      document.addEventListener('pointerdown', onDown);
+    }
     return () => {
       window.removeEventListener('keydown', onKey);
       document.removeEventListener('pointerdown', onDown);
     };
-  }, [clearGrace]);
+  }, [clearGrace, isDesktop]);
 
   const handleToggle = (id: number) => setOpenId((prev) => (prev === id ? null : id));
 
@@ -1079,28 +1170,6 @@ export const Experience = () => {
 
   const overrideFor = (org: OrganizationData): TooltipPlacement | undefined => org.tooltipPlacement;
 
-  // Mobile: no room-based scoring (small screens, no cluster); keep a simple,
-  // deterministic side that never points straight into the wrapper center.
-  const mobilePlacements = useMemo(() => {
-    const map = new Map<string, TooltipPlacement>();
-    const xs = organizations.map((org) => org.x);
-    const minX = Math.min(...xs);
-    const maxX = Math.max(...xs);
-    organizations.forEach((org, index) => {
-      if (org.tooltipPlacement) {
-        map.set(org.id, org.tooltipPlacement);
-        return;
-      }
-      if (maxX - minX < 1) {
-        map.set(org.id, index === 0 ? 'top' : 'bottom');
-        return;
-      }
-      const rel = (org.x - minX) / (maxX - minX);
-      map.set(org.id, rel < 0.5 ? 'bottom' : 'top');
-    });
-    return map;
-  }, []);
-
   return (
     <section
       id="experience"
@@ -1342,89 +1411,35 @@ export const Experience = () => {
             })}
           </div>
         ) : (
-          <div>
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                justifyContent: 'center',
-                gap: '28px',
-                marginBottom: '36px',
-              }}
-            >
-              {organizations.map((org) => (
-                <div key={org.id} style={{ display: 'contents' }}>
-                  <div
-                    ref={(el) => {
-                      mobileLogoTriggerRefs.current[org.id] = el;
-                    }}
-                    data-org={org.id}
-                    className="org-logo-trigger"
-                    aria-label={org.name}
-                    tabIndex={0}
-                    onFocus={() => activateOrg(org.id)}
-                    onBlur={deactivateOrg}
-                    style={{
-                      width: '64px',
-                      height: '64px',
-                      borderRadius: '16px',
-                      background: 'var(--bg-page-light)',
-                      border: '1px solid var(--border-subtle)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '9px',
-                    }}
-                  >
-                    <img
-                      src={org.logo}
-                      alt=""
-                      width={200}
-                      height={200}
-                      loading="lazy"
-                      decoding="async"
-                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                    />
-                  </div>
-                  {activeOrgId === org.id && (
-                    <OrgTooltip
-                      label={org.name}
-                      triggerRefs={mobileLogoTriggerRefs}
-                      orgId={org.id}
-                      center={{ cx: 0, cy: 0 }}
-                      containerRef={containerRef}
-                      cardRefs={cardRefs}
-                      logoTriggerRefs={mobileLogoTriggerRefs}
-                      lineList={[]}
-                      activeOrgId={activeOrgId}
-                      override={mobilePlacements.get(org.id) ?? 'bottom'}
-                      version={measureVersion}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {experiences.map((exp, i) => (
-                <ExperienceCard
+          <div className="experience-timeline">
+            {mobileExperiences.map((exp, idx) => {
+              const isOpen = openId === exp.id;
+              return (
+                <div
                   key={exp.id}
-                  exp={exp}
-                  org={orgById.get(exp.organizationId)}
-                  index={i}
-                  isOpen={openId === exp.id}
-                  active={effectiveOrg === exp.organizationId}
-                  dimmed={false}
-                  entered={entered}
-                  settled={settled}
-                  prefersReduced={prefersReduced}
-                  showLogo
-                  onToggle={() => handleToggle(exp.id)}
-                  onActivate={() => activateOrg(exp.organizationId)}
-                  onDeactivate={deactivateOrg}
-                />
-              ))}
-            </div>
+                  className={`experience-timeline__item${isOpen ? ' is-open' : ''}`}
+                  data-open-card={isOpen ? 'true' : undefined}
+                >
+                  <div className="experience-timeline__aside" aria-hidden="true">
+                    <span className="experience-timeline__dot" />
+                  </div>
+                  <ExperienceCard
+                    exp={exp}
+                    org={orgById.get(exp.organizationId)}
+                    index={idx}
+                    isOpen={isOpen}
+                    active={false}
+                    dimmed={false}
+                    entered={entered}
+                    settled={settled}
+                    prefersReduced={prefersReduced}
+                    showLogo
+                    isTimeline
+                    onToggle={() => handleToggle(exp.id)}
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
