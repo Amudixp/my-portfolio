@@ -52,8 +52,12 @@ const MIN_LOGO_SCALE = 0.82;
 const CARD_WIDTH = 300;
 const GAP = 24;
 const SIDE_MARGIN = 24;
-const TOP_MARGIN = 24;
-const BOTTOM_MARGIN = 48;
+const TOP_MARGIN = 8;
+const HUB_SAFE_PAD = 12;
+// Trim the leading whitespace above the top card row so the header sits close
+// to the content. Applied to both card and cluster/cluster-relative geometry,
+// so the layout proportions are preserved and only the top gap is removed.
+const HUB_Y_OFFSET = -130;
 const GRACE_MS = 170;
 const TRANSITION_MS = 300;
 // Minimum horizontal gap between the cluster edge and the nearest card column.
@@ -724,7 +728,7 @@ export const Experience = () => {
     const count = organizations.length || 1;
     return {
       cx: containerWidth * CLUSTER_X + (sx / count) * logoScale,
-      cy: DESIGN_H * CLUSTER_Y + (sy / count) * logoScale,
+      cy: DESIGN_H * CLUSTER_Y + (sy / count) * logoScale + HUB_Y_OFFSET,
     };
   }, [containerWidth, logoScale]);
   const logoGeom = useMemo(() => {
@@ -732,7 +736,7 @@ export const Experience = () => {
     organizations.forEach((org) => {
       map.set(org.id, {
         cx: containerWidth * CLUSTER_X + org.x * logoScale,
-        cy: DESIGN_H * CLUSTER_Y + org.y * logoScale,
+        cy: DESIGN_H * CLUSTER_Y + org.y * logoScale + HUB_Y_OFFSET,
         size: org.size * logoScale,
         rotate: org.rotate,
       });
@@ -988,7 +992,7 @@ export const Experience = () => {
       const cfg = CARD_LAYOUT[i];
       const size = cardSizes[exp.id] ?? { w: CARD_WIDTH, h: 156 };
       const baseCx = (cfg.x / 100) * cw;
-      const baseCy = (cfg.y / 100) * DESIGN_H;
+      const baseCy = (cfg.y / 100) * DESIGN_H + HUB_Y_OFFSET;
       return {
         id: exp.id,
         orgId: exp.organizationId,
@@ -1017,18 +1021,25 @@ export const Experience = () => {
       if (!moved) break;
     }
 
-    let neededHeight = DESIGN_H;
+    // Hug the actual content: the lowest element (card or logo) plus a small
+    // safe pad. No fixed floor, so no permanent dead space is reserved for
+    // push-away / expanded cards (those grow `card.cy`/`card.h` when open).
+    let neededHeight = HUB_SAFE_PAD;
     for (const card of cards) {
-      const bottom = card.cy + card.h / 2 + BOTTOM_MARGIN;
+      const bottom = card.cy + card.h / 2 + HUB_SAFE_PAD;
       if (bottom > neededHeight) neededHeight = bottom;
     }
+    obstacles.forEach((obstacle) => {
+      const bottom = obstacle.cy + obstacle.h / 2 + HUB_SAFE_PAD;
+      if (bottom > neededHeight) neededHeight = bottom;
+    });
 
     cards.forEach((card) => {
       const minCx = card.w / 2 + SIDE_MARGIN;
       const maxCx = Math.max(minCx, cw - card.w / 2 - SIDE_MARGIN);
       card.cx = Math.min(Math.max(card.cx, minCx), maxCx);
       const minCy = card.h / 2 + TOP_MARGIN;
-      const maxCy = Math.max(minCy, neededHeight - card.h / 2 - BOTTOM_MARGIN);
+      const maxCy = Math.max(minCy, neededHeight - card.h / 2 - HUB_SAFE_PAD);
       card.cy = Math.min(Math.max(card.cy, minCy), maxCy);
     });
 
@@ -1095,7 +1106,9 @@ export const Experience = () => {
       id="experience"
       ref={sectionRef}
       style={{
-        padding: isSmallScreen ? '50px 16px 70px 16px' : '90px 40px 110px 40px',
+        padding: isSmallScreen
+          ? 'var(--section-gap-top-lg) 16px 0 16px'
+          : 'var(--section-gap-top-lg) 40px 0 40px',
         backgroundColor: 'var(--bg-page)',
         position: 'relative',
         transition: 'background-color 0.3s ease',
@@ -1107,7 +1120,7 @@ export const Experience = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: prefersReduced ? 0 : 0.6 }}
-          style={{ marginBottom: isDesktop ? '20px' : '40px', textAlign: 'center' }}
+          style={{ marginBottom: isDesktop ? '24px' : '28px', textAlign: 'center' }}
         >
           <h2
             style={{
@@ -1140,7 +1153,6 @@ export const Experience = () => {
               position: 'relative',
               width: '100%',
               height: `${layoutHeight}px`,
-              minHeight: `${DESIGN_H}px`,
               transition: prefersReduced ? 'none' : `height ${TRANSITION_MS}ms ease`,
             }}
           >
@@ -1292,7 +1304,7 @@ export const Experience = () => {
                   style={{
                     position: 'absolute',
                     left: `${cfg.x}%`,
-                    top: `${(cfg.y / 100) * DESIGN_H}px`,
+                    top: `${(cfg.y / 100) * DESIGN_H + HUB_Y_OFFSET}px`,
                     transform: 'translate(-50%, -50%)',
                     width: `${CARD_WIDTH}px`,
                     zIndex: isOpen ? LAYERS.openCard : LAYERS.card,

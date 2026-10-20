@@ -28,6 +28,19 @@
   --font-body: 'Inter', system-ui, sans-serif;
   /* Tooltip must sit above skip-link, navbar, cards and modals. */
   --z-tooltip: 1000000;
+  /* Vertical gap between adjacent sections. Only the section bottom applies it,
+     so neighbouring paddings never stack into an oversized gap. */
+  --section-gap: 52px;
+  /* Larger top gap for sections whose title should read clearly separate from
+     the previous section (proximity: title closer to its own content). */
+  --section-gap-top-lg: 88px;
+}
+
+@media (max-width: 1023px) {
+  :root {
+    --section-gap: 36px;
+    --section-gap-top-lg: 60px;
+  }
 }
 
 * {

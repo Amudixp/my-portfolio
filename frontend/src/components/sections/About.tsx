@@ -114,7 +114,7 @@ export const About = () => {
   const isLight = theme === 'light';
 
   return (
-    <section id="about" style={{ padding: isSmallScreen ? '50px 12px' : '90px 40px', backgroundColor: isLight ? 'var(--bg-page)' : 'var(--bg-page)', transition: 'background-color 0.3s ease' }}>
+    <section id="about" style={{ padding: isSmallScreen ? '50px 12px 0 12px' : '90px 40px 0 40px', backgroundColor: isLight ? 'var(--bg-page)' : 'var(--bg-page)', transition: 'background-color 0.3s ease' }}>
       <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
         
         {/* Section Header */}

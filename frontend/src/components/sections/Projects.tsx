@@ -173,7 +173,9 @@ export const Projects = () => {
     }
   };
 
-  const sectionPadding = isSmallScreen ? '50px 16px' : '80px 40px';
+  const sectionPadding = isSmallScreen
+    ? 'var(--section-gap) 16px 50px 16px'
+    : 'var(--section-gap) 40px 80px 40px';
   const minHeight = isSmallScreen ? '350px' : '480px';
 
   // Pagination geometry — kept fluid so the control row never overflows on phones.
