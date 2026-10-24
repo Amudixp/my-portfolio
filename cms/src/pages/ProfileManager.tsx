@@ -1,154 +1,160 @@
-import React, { useEffect, useState } from 'react';
-import { api } from '../lib/api';
-import { Save, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Save } from 'lucide-react';
+import { api, apiErrorMessage } from '../lib/api';
+import { useToast } from '../context/ToastContext';
+import { useMediaLibrary } from '../hooks/useMediaLibrary';
+import type { Profile } from '../lib/types';
+import { Card, CardHeader, PageHeader } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { Field, Input, Textarea } from '../components/ui/Form';
+import { Spinner } from '../components/ui/Feedback';
+import { AttachmentField } from '../components/attachments/AttachmentField';
+import type { AttachmentValue } from '../components/attachments/AttachmentField';
 
 export function ProfileManager() {
-  const [profile, setProfile] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [message, setMessage] = useState({ text: '', type: '' });
+  const toast = useToast();
+  const media = useMediaLibrary();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [avatar, setAvatar] = useState<AttachmentValue>({ url: null, mediaId: null, alt: null });
+  const [resume, setResume] = useState<AttachmentValue>({ url: null, mediaId: null, alt: null });
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
+    const load = async () => {
+      try {
+        const { data } = await api.get<Profile>('/profile');
+        setProfile(data);
+        setAvatar({ url: null, mediaId: data.mediaId ?? null, alt: null });
+        setResume({
+          url: data.resume ?? null,
+          mediaId: data.resumeMediaId ?? null,
+          alt: null,
+        });
+      } catch (error) {
+        toast.error(apiErrorMessage(error, 'Failed to load the profile.'));
+      } finally {
+        setLoading(false);
+      }
+    };
+    void load();
+  }, [toast]);
 
-  const fetchProfile = async () => {
+  // The profile picture is stored as a media id, so the preview resolves the
+  // url from the media library.
+  const avatarUrl = avatar.url ?? media.findById(avatar.mediaId)?.url ?? null;
+
+  if (loading || !profile) return <Spinner label="Loading profile…" />;
+
+  const handleSave = async () => {
+    setSaving(true);
     try {
-      const res = await api.get('/profile');
-      setProfile(res.data);
-    } catch (err) {
-      console.error('Failed to fetch profile', err);
+      const { data } = await api.put<Profile>('/profile', {
+        ...profile,
+        mediaId: avatar.mediaId,
+        resumeMediaId: resume.mediaId,
+        resume: resume.url,
+      });
+      setProfile(data);
+      toast.success('Profile saved.');
+    } catch (error) {
+      toast.error(apiErrorMessage(error, 'Failed to save the profile.'));
     } finally {
-      setIsLoading(false);
+      setSaving(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setProfile(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    setMessage({ text: '', type: '' });
-    
-    try {
-      await api.put('/profile', profile);
-      setMessage({ text: 'Profile updated successfully!', type: 'success' });
-    } catch (err) {
-      setMessage({ text: 'Failed to update profile.', type: 'error' });
-    } finally {
-      setIsSaving(false);
-      setTimeout(() => setMessage({ text: '', type: '' }), 3000);
-    }
-  };
-
-  if (isLoading) {
-    return <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-brand-600" /></div>;
-  }
+  const update = <K extends keyof Profile>(key: K, value: Profile[K]) =>
+    setProfile((current: Profile | null) => (current ? { ...current, [key]: value } : current));
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Profile Manager</h1>
-        <button
-          onClick={handleSubmit}
-          disabled={isSaving}
-          className="flex items-center px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50"
-        >
-          {isSaving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />}
-          Save Changes
-        </button>
+    <>
+      <PageHeader
+        title="Profile"
+        description="Identity, contact details and the attachments of the about block."
+        actions={
+          <Button type="button" icon={<Save size={15} />} onClick={handleSave} loading={saving}>
+            Save profile
+          </Button>
+        }
+      />
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Card>
+          <CardHeader title="Details" description="Shown in the about block and the footer." />
+          <div className="space-y-4">
+            <Field label="Name">
+              <Input value={profile.name} onChange={(e) => update('name', e.target.value)} />
+            </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Major">
+                <Input value={profile.major} onChange={(e) => update('major', e.target.value)} />
+              </Field>
+              <Field label="University">
+                <Input value={profile.university} onChange={(e) => update('university', e.target.value)} />
+              </Field>
+              <Field label="Location">
+                <Input value={profile.location} onChange={(e) => update('location', e.target.value)} />
+              </Field>
+              <Field label="GPA">
+                <Input value={profile.gpa} onChange={(e) => update('gpa', e.target.value)} />
+              </Field>
+            </div>
+            <Field label="Status">
+              <Input value={profile.status} onChange={(e) => update('status', e.target.value)} />
+            </Field>
+            <Field label="Short bio" hint="A few sentences about you.">
+              <Textarea
+                value={profile.shortBio}
+                onChange={(e) => update('shortBio', e.target.value)}
+                className="min-h-32"
+              />
+            </Field>
+          </div>
+        </Card>
+
+        <div className="space-y-5">
+          <Card>
+            <CardHeader title="Contact" description="Used by the contact section." />
+            <div className="space-y-4">
+              <Field label="Email">
+                <Input value={profile.email} onChange={(e) => update('email', e.target.value)} />
+              </Field>
+              <Field label="Phone">
+                <Input value={profile.phone} onChange={(e) => update('phone', e.target.value)} />
+              </Field>
+              <Field label="GitHub">
+                <Input value={profile.github} onChange={(e) => update('github', e.target.value)} />
+              </Field>
+              <Field label="LinkedIn">
+                <Input value={profile.linkedin} onChange={(e) => update('linkedin', e.target.value)} />
+              </Field>
+            </div>
+          </Card>
+
+          <Card>
+            <CardHeader title="Attachments" description="Profile picture and curriculum vitae." />
+            <div className="space-y-5">
+              <AttachmentField
+                label="Profile picture"
+                value={{ ...avatar, url: avatarUrl }}
+                onChange={setAvatar}
+                folder="portfolio/profile"
+                hint="Portrait orientation, e.g. 3:4."
+              />
+              <AttachmentField
+                label="Curriculum vitae"
+                value={resume}
+                onChange={setResume}
+                folder="portfolio/profile"
+                accept="application/pdf,.pdf"
+                resourceType="raw"
+                hint="PDF file linked from the download CV button."
+              />
+            </div>
+          </Card>
+        </div>
       </div>
-
-      {message.text && (
-        <div className={`p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
-          {message.text}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="p-6 space-y-6">
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-              <input type="text" name="name" value={profile?.name || ''} onChange={handleChange} required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status / Tagline</label>
-              <input type="text" name="status" value={profile?.status || ''} onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Major</label>
-              <input type="text" name="major" value={profile?.major || ''} onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">University</label>
-              <input type="text" name="university" value={profile?.university || ''} onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-              <input type="text" name="location" value={profile?.location || ''} onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">GPA</label>
-              <input type="text" name="gpa" value={profile?.gpa || ''} onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-              <input type="text" name="phone" value={profile?.phone || ''} onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input type="email" name="email" value={profile?.email || ''} onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">GitHub URL</label>
-              <input type="url" name="github" value={profile?.github || ''} onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">LinkedIn URL</label>
-              <input type="url" name="linkedin" value={profile?.linkedin || ''} onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Short Bio</label>
-            <textarea name="shortBio" rows={4} value={profile?.shortBio || ''} onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Resume URL (Optional)</label>
-            <input type="text" name="resume" value={profile?.resume || ''} onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
-            <p className="text-xs text-gray-500 mt-1">If provided, enables the 'Download Resume' button.</p>
-          </div>
-
-        </div>
-      </form>
-    </div>
+    </>
   );
 }

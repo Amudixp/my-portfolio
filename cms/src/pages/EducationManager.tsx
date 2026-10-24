@@ -1,119 +1,442 @@
-import React, { useEffect, useState } from 'react';
-import { api } from '../lib/api';
-import { Save, Loader2, Plus, Edit2, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Award, Edit2, Plus, Save, Trash2 } from 'lucide-react';
+import { api, apiErrorMessage } from '../lib/api';
+import { useResource } from '../hooks/useResource';
+import { useToast } from '../context/ToastContext';
+import type { Award as AwardType, Certification, Education } from '../lib/types';
+import { Card, CardHeader, PageHeader } from '../components/ui/Card';
+import { Button, IconButton } from '../components/ui/Button';
+import { Field, Input, Textarea } from '../components/ui/Form';
+import { EmptyState, Spinner } from '../components/ui/Feedback';
+import { SortableList } from '../components/ui/SortableList';
+import { ConfirmDialog, Modal } from '../components/ui/Modal';
+import { AttachmentField } from '../components/attachments/AttachmentField';
+import type { AttachmentValue } from '../components/attachments/AttachmentField';
 
 export function EducationManager() {
-  const [edu, setEdu] = useState<any>(null);
-  const [certs, setCerts] = useState<any[]>([]);
-  const [awards, setAwards] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const toast = useToast();
+  const [education, setEducation] = useState<Education | null>(null);
+  const [courseworks, setCourseworks] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  // Reusable modal states
-  const [modalType, setModalType] = useState<'cert'|'award'|null>(null);
-  const [currentItem, setCurrentItem] = useState<any>(null);
+  const certifications = useResource<Certification>('/certifications');
+  const awards = useResource<AwardType>('/awards');
 
-  useEffect(() => { fetchAll(); }, []);
+  const [certDraft, setCertDraft] = useState<Partial<Certification> | null>(null);
+  const [certAttachment, setCertAttachment] = useState<AttachmentValue>({ url: null, mediaId: null, alt: null });
+  const [awardDraft, setAwardDraft] = useState<Partial<AwardType> | null>(null);
+  const [awardAttachment, setAwardAttachment] = useState<AttachmentValue>({ url: null, mediaId: null, alt: null });
+  const [pendingDelete, setPendingDelete] = useState<{ type: 'cert' | 'award'; id: number; title: string } | null>(
+    null,
+  );
 
-  const fetchAll = async () => {
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const { data } = await api.get<{ education: Education }>('/education');
+        setEducation(data.education);
+        setCourseworks((data.education.relevantCourseworks ?? []).join(', '));
+      } catch (error) {
+        toast.error(apiErrorMessage(error, 'Failed to load the education data.'));
+      } finally {
+        setLoading(false);
+      }
+    };
+    void load();
+  }, [toast]);
+
+  const handleSaveEducation = async () => {
+    if (!education) return;
+    setSaving(true);
     try {
-      const eduRes = await api.get('/education');
-      setEdu(eduRes.data.education);
-      const cRes = await api.get('/certifications');
-      setCerts(cRes.data);
-      const aRes = await api.get('/awards');
-      setAwards(aRes.data);
-    } finally { setIsLoading(false); }
-  };
-
-  const saveEdu = async () => {
-    const payload = { ...edu, relevantCourseworks: typeof edu.relevantCourseworks === 'string' ? (edu.relevantCourseworks as string).split(',').map(s=>s.trim()) : edu.relevantCourseworks };
-    await api.put('/education', payload);
-    alert('Education saved');
-  };
-
-  const saveModal = async () => {
-    if (modalType === 'cert') {
-      if (currentItem.id) await api.put(`/certifications/${currentItem.id}`, currentItem);
-      else await api.post('/certifications', currentItem);
-    } else {
-      if (currentItem.id) await api.put(`/awards/${currentItem.id}`, currentItem);
-      else await api.post('/awards', currentItem);
-    }
-    setModalType(null); fetchAll();
-  };
-
-  const deleteItem = async (type: 'cert'|'award', id: number) => {
-    if (window.confirm('Delete?')) {
-      await api.delete(`/${type === 'cert' ? 'certifications' : 'awards'}/${id}`);
-      fetchAll();
+      const { data } = await api.put<{ education: Education }>('/education', {
+        ...education,
+        relevantCourseworks: courseworks
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean),
+      });
+      setEducation(data.education);
+      toast.success('Education saved.');
+    } catch (error) {
+      toast.error(apiErrorMessage(error, 'Failed to save the education data.'));
+    } finally {
+      setSaving(false);
     }
   };
 
-  if (isLoading) return <div className="flex justify-center"><Loader2 className="animate-spin text-brand-600 w-8 h-8" /></div>;
+  const handleSaveCert = async () => {
+    if (!certDraft?.title) {
+      toast.error('A title is required.');
+      return;
+    }
+    try {
+      const payload = { ...certDraft, image: certAttachment.url, mediaId: certAttachment.mediaId };
+      if (certDraft.id) {
+        await certifications.update(certDraft.id, payload);
+        toast.success('Certification updated.');
+      } else {
+        await certifications.create(payload);
+        toast.success('Certification added.');
+      }
+      setCertDraft(null);
+    } catch (error) {
+      toast.error(apiErrorMessage(error, 'Failed to save the certification.'));
+    }
+  };
+
+  const handleSaveAward = async () => {
+    if (!awardDraft?.title) {
+      toast.error('A title is required.');
+      return;
+    }
+    try {
+      const payload = { ...awardDraft, image: awardAttachment.url, mediaId: awardAttachment.mediaId };
+      if (awardDraft.id) {
+        await awards.update(awardDraft.id, payload);
+        toast.success('Award updated.');
+      } else {
+        await awards.create(payload);
+        toast.success('Award added.');
+      }
+      setAwardDraft(null);
+    } catch (error) {
+      toast.error(apiErrorMessage(error, 'Failed to save the award.'));
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!pendingDelete) return;
+    try {
+      if (pendingDelete.type === 'cert') {
+        await certifications.remove(pendingDelete.id);
+      } else {
+        await awards.remove(pendingDelete.id);
+      }
+      toast.success('Item removed.');
+    } catch (error) {
+      toast.error(apiErrorMessage(error, 'Failed to remove the item.'));
+    } finally {
+      setPendingDelete(null);
+    }
+  };
+
+  if (loading) return <Spinner label="Loading education…" />;
 
   return (
-    <div className="space-y-8">
-      {/* Education Info */}
-      <div className="bg-white p-6 rounded-xl border shadow-sm">
-        <div className="flex justify-between items-center mb-4"><h2 className="text-xl font-bold">Formal Education</h2><button onClick={saveEdu} className="bg-brand-600 text-white px-4 py-2 rounded-lg flex"><Save className="w-4 h-4 mr-2" />Save</button></div>
-        <div className="grid grid-cols-2 gap-4">
-          <div><label className="block text-sm mb-1">Degree</label><input className="w-full border p-2 rounded-lg" value={edu?.degree||''} onChange={e=>setEdu({...edu, degree: e.target.value})} /></div>
-          <div><label className="block text-sm mb-1">Institution</label><input className="w-full border p-2 rounded-lg" value={edu?.institution||''} onChange={e=>setEdu({...edu, institution: e.target.value})} /></div>
-          <div><label className="block text-sm mb-1">Period</label><input className="w-full border p-2 rounded-lg" value={edu?.period||''} onChange={e=>setEdu({...edu, period: e.target.value})} /></div>
-          <div><label className="block text-sm mb-1">GPA</label><input className="w-full border p-2 rounded-lg" value={edu?.gpa||''} onChange={e=>setEdu({...edu, gpa: e.target.value})} /></div>
-          <div><label className="block text-sm mb-1">Credits</label><input className="w-full border p-2 rounded-lg" value={edu?.credits||''} onChange={e=>setEdu({...edu, credits: e.target.value})} /></div>
-          <div className="col-span-2"><label className="block text-sm mb-1">Relevant Courseworks (comma sep)</label><textarea className="w-full border p-2 rounded-lg" value={Array.isArray(edu?.relevantCourseworks)?edu.relevantCourseworks.join(', '):edu?.relevantCourseworks||''} onChange={e=>setEdu({...edu, relevantCourseworks: e.target.value})} /></div>
-        </div>
-      </div>
+    <>
+      <PageHeader
+        title="Education"
+        description="Formal education, certifications and awards."
+        actions={
+          <Button type="button" icon={<Save size={15} />} onClick={handleSaveEducation} loading={saving}>
+            Save education
+          </Button>
+        }
+      />
 
-      {/* Certifications */}
-      <div className="bg-white p-6 rounded-xl border shadow-sm">
-        <div className="flex justify-between items-center mb-4"><h2 className="text-xl font-bold">Certifications</h2><button onClick={()=>{setCurrentItem({}); setModalType('cert')}} className="bg-brand-600 text-white px-4 py-2 rounded-lg flex"><Plus className="w-4 h-4 mr-2" />Add Cert</button></div>
-        {certs.map(c => (
-          <div key={c.id} className="flex justify-between items-center p-3 border-b"><div className="flex-1"><b>{c.title}</b> ({c.issuer})</div>
-          <button onClick={()=>{setCurrentItem(c); setModalType('cert')}} className="p-2 text-gray-500 hover:text-brand-600"><Edit2 size={16} /></button>
-          <button onClick={()=>deleteItem('cert', c.id)} className="p-2 text-gray-500 hover:text-red-600"><Trash2 size={16} /></button></div>
-        ))}
-      </div>
-
-      {/* Awards */}
-      <div className="bg-white p-6 rounded-xl border shadow-sm">
-        <div className="flex justify-between items-center mb-4"><h2 className="text-xl font-bold">Awards</h2><button onClick={()=>{setCurrentItem({}); setModalType('award')}} className="bg-brand-600 text-white px-4 py-2 rounded-lg flex"><Plus className="w-4 h-4 mr-2" />Add Award</button></div>
-        {awards.map(a => (
-          <div key={a.id} className="flex justify-between items-center p-3 border-b"><div className="flex-1"><b>{a.title}</b> ({a.year})</div>
-          <button onClick={()=>{setCurrentItem(a); setModalType('award')}} className="p-2 text-gray-500 hover:text-brand-600"><Edit2 size={16} /></button>
-          <button onClick={()=>deleteItem('award', a.id)} className="p-2 text-gray-500 hover:text-red-600"><Trash2 size={16} /></button></div>
-        ))}
-      </div>
-
-      {/* Modal */}
-      {modalType && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl w-[500px] max-w-[90%]">
-            <h3 className="text-lg font-bold mb-4">{modalType === 'cert' ? 'Certification' : 'Award'}</h3>
-            <div className="space-y-4">
-              <div><label className="block text-sm mb-1">Title</label><input className="w-full border p-2 rounded-lg" value={currentItem?.title||''} onChange={e=>setCurrentItem({...currentItem, title: e.target.value})} /></div>
-              {modalType === 'cert' ? (
-                <>
-                  <div><label className="block text-sm mb-1">Issuer</label><input className="w-full border p-2 rounded-lg" value={currentItem?.issuer||''} onChange={e=>setCurrentItem({...currentItem, issuer: e.target.value})} /></div>
-                  <div><label className="block text-sm mb-1">Date</label><input className="w-full border p-2 rounded-lg" value={currentItem?.date||''} onChange={e=>setCurrentItem({...currentItem, date: e.target.value})} /></div>
-                  <div><label className="block text-sm mb-1">Link</label><input className="w-full border p-2 rounded-lg" value={currentItem?.link||''} onChange={e=>setCurrentItem({...currentItem, link: e.target.value})} /></div>
-                </>
-              ) : (
-                <>
-                  <div><label className="block text-sm mb-1">Year</label><input className="w-full border p-2 rounded-lg" value={currentItem?.year||''} onChange={e=>setCurrentItem({...currentItem, year: e.target.value})} /></div>
-                  <div><label className="block text-sm mb-1">Tag (e.g. National Scholarship)</label><input className="w-full border p-2 rounded-lg" value={currentItem?.tag||''} onChange={e=>setCurrentItem({...currentItem, tag: e.target.value})} /></div>
-                  <div><label className="block text-sm mb-1">Description</label><textarea className="w-full border p-2 rounded-lg" value={currentItem?.description||''} onChange={e=>setCurrentItem({...currentItem, description: e.target.value})} /></div>
-                </>
-              )}
+      <Card>
+        <CardHeader title="Formal education" description="Shown at the top of the education section." />
+        {education ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Degree">
+              <Input
+                value={education.degree ?? ''}
+                onChange={(e) => setEducation({ ...education, degree: e.target.value })}
+              />
+            </Field>
+            <Field label="Institution">
+              <Input
+                value={education.institution ?? ''}
+                onChange={(e) => setEducation({ ...education, institution: e.target.value })}
+              />
+            </Field>
+            <Field label="Period">
+              <Input
+                value={education.period ?? ''}
+                onChange={(e) => setEducation({ ...education, period: e.target.value })}
+              />
+            </Field>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="GPA">
+                <Input
+                  value={education.gpa ?? ''}
+                  onChange={(e) => setEducation({ ...education, gpa: e.target.value })}
+                />
+              </Field>
+              <Field label="Credits">
+                <Input
+                  value={education.credits ?? ''}
+                  onChange={(e) => setEducation({ ...education, credits: e.target.value })}
+                />
+              </Field>
             </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button onClick={()=>setModalType(null)} className="px-4 py-2 border rounded-lg">Cancel</button>
-              <button onClick={saveModal} className="bg-brand-600 text-white px-4 py-2 rounded-lg">Save</button>
-            </div>
+            <Field label="Relevant coursework" hint="Comma separated." className="sm:col-span-2">
+              <Textarea value={courseworks} onChange={(e) => setCourseworks(e.target.value)} />
+            </Field>
           </div>
-        </div>
-      )}
-    </div>
+        ) : null}
+      </Card>
+
+      <Card>
+        <CardHeader
+          title="Certifications"
+          description="Badges shown in the education section."
+          actions={
+              <Button
+                type="button"
+                size="sm"
+                variant="primary"
+                icon={<Plus size={14} />}
+                onClick={() => {
+                  setCertDraft({ title: '', issuer: '', date: '', link: '' });
+                  setCertAttachment({ url: null, mediaId: null, alt: null });
+                }}
+              >
+              Add certification
+            </Button>
+          }
+        />
+        {certifications.loading ? (
+          <Spinner label="Loading certifications…" />
+        ) : (
+          <SortableList
+            items={certifications.items}
+            onReorder={(ids) => void certifications.reorder(ids)}
+            empty={<EmptyState title="No certifications yet" />}
+            renderItem={(certification) => (
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-line bg-surface">
+                  {certification.image ? (
+                    <img
+                      src={certification.image}
+                      alt={certification.title}
+                      className="h-full w-full object-contain"
+                    />
+                  ) : null}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-ink">{certification.title}</p>
+                  <p className="truncate text-xs text-muted">
+                    {certification.issuer}
+                    {certification.date ? ` · ${certification.date}` : ''}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <IconButton
+                    label="Edit certification"
+                    onClick={() => {
+                      setCertDraft(certification);
+                      setCertAttachment({
+                        url: certification.image ?? null,
+                        mediaId: certification.mediaId ?? null,
+                        alt: certification.title,
+                      });
+                    }}
+                  >
+                    <Edit2 size={15} />
+                  </IconButton>
+                  <IconButton
+                    label="Delete certification"
+                    tone="danger"
+                    onClick={() =>
+                      setPendingDelete({ type: 'cert', id: certification.id, title: certification.title })
+                    }
+                  >
+                    <Trash2 size={15} />
+                  </IconButton>
+                </div>
+              </div>
+            )}
+          />
+        )}
+      </Card>
+
+      <Card>
+        <CardHeader
+          title="Awards"
+          description="Highlights of the education section."
+          actions={
+              <Button
+                type="button"
+                size="sm"
+                variant="primary"
+                icon={<Plus size={14} />}
+                onClick={() => {
+                  setAwardDraft({ title: '', year: '', tag: '', description: '' });
+                  setAwardAttachment({ url: null, mediaId: null, alt: null });
+                }}
+              >
+              Add award
+            </Button>
+          }
+        />
+        {awards.loading ? (
+          <Spinner label="Loading awards…" />
+        ) : (
+          <SortableList
+            items={awards.items}
+            onReorder={(ids) => void awards.reorder(ids)}
+            empty={<EmptyState title="No awards yet" icon={<Award size={22} />} />}
+            renderItem={(award) => (
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-line bg-surface">
+                  {award.image ? (
+                    <img src={award.image} alt={award.title} className="h-full w-full object-contain" />
+                  ) : null}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-ink">{award.title}</p>
+                  <p className="truncate text-xs text-muted">
+                    {award.year}
+                    {award.tag ? ` · ${award.tag}` : ''}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <IconButton
+                    label="Edit award"
+                    onClick={() => {
+                      setAwardDraft(award);
+                      setAwardAttachment({
+                        url: award.image ?? null,
+                        mediaId: award.mediaId ?? null,
+                        alt: award.title,
+                      });
+                    }}
+                  >
+                    <Edit2 size={15} />
+                  </IconButton>
+                  <IconButton
+                    label="Delete award"
+                    tone="danger"
+                    onClick={() => setPendingDelete({ type: 'award', id: award.id, title: award.title })}
+                  >
+                    <Trash2 size={15} />
+                  </IconButton>
+                </div>
+              </div>
+            )}
+          />
+        )}
+      </Card>
+
+      <Modal
+        open={certDraft !== null}
+        title={certDraft?.id ? 'Edit certification' : 'New certification'}
+        onClose={() => setCertDraft(null)}
+        footer={
+          <>
+            <Button type="button" variant="ghost" onClick={() => setCertDraft(null)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleSaveCert}>
+              Save
+            </Button>
+          </>
+        }
+      >
+        {certDraft ? (
+          <div className="space-y-4">
+            <Field label="Title">
+              <Input
+                value={certDraft.title ?? ''}
+                onChange={(e) => setCertDraft({ ...certDraft, title: e.target.value })}
+              />
+            </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Issuer">
+                <Input
+                  value={certDraft.issuer ?? ''}
+                  onChange={(e) => setCertDraft({ ...certDraft, issuer: e.target.value })}
+                />
+              </Field>
+              <Field label="Date">
+                <Input
+                  value={certDraft.date ?? ''}
+                  onChange={(e) => setCertDraft({ ...certDraft, date: e.target.value })}
+                />
+              </Field>
+            </div>
+            <Field label="Link">
+              <Input
+                value={certDraft.link ?? ''}
+                onChange={(e) => setCertDraft({ ...certDraft, link: e.target.value })}
+                placeholder="https://…"
+              />
+            </Field>
+            <AttachmentField
+              label="Badge image"
+              value={certAttachment}
+              onChange={setCertAttachment}
+              folder="portfolio/certifications"
+              hint="Square badge, e.g. 256×256."
+            />
+          </div>
+        ) : null}
+      </Modal>
+
+      <Modal
+        open={awardDraft !== null}
+        title={awardDraft?.id ? 'Edit award' : 'New award'}
+        onClose={() => setAwardDraft(null)}
+        footer={
+          <>
+            <Button type="button" variant="ghost" onClick={() => setAwardDraft(null)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleSaveAward}>
+              Save
+            </Button>
+          </>
+        }
+      >
+        {awardDraft ? (
+          <div className="space-y-4">
+            <Field label="Title">
+              <Input
+                value={awardDraft.title ?? ''}
+                onChange={(e) => setAwardDraft({ ...awardDraft, title: e.target.value })}
+              />
+            </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Year">
+                <Input
+                  value={awardDraft.year ?? ''}
+                  onChange={(e) => setAwardDraft({ ...awardDraft, year: e.target.value })}
+                />
+              </Field>
+              <Field label="Tag" hint="e.g. National Scholarship.">
+                <Input
+                  value={awardDraft.tag ?? ''}
+                  onChange={(e) => setAwardDraft({ ...awardDraft, tag: e.target.value })}
+                />
+              </Field>
+            </div>
+            <Field label="Description">
+              <Textarea
+                value={awardDraft.description ?? ''}
+                onChange={(e) => setAwardDraft({ ...awardDraft, description: e.target.value })}
+              />
+            </Field>
+            <AttachmentField
+              label="Badge image"
+              value={awardAttachment}
+              onChange={setAwardAttachment}
+              folder="portfolio/awards"
+              hint="Square badge, e.g. 256×256."
+            />
+          </div>
+        ) : null}
+      </Modal>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete item"
+        message={`"${pendingDelete?.title ?? ''}" will be removed from the site.`}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={handleDelete}
+      />
+    </>
   );
 }

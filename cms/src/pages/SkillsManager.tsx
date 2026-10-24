@@ -1,98 +1,185 @@
-import React, { useEffect, useState } from 'react';
-import { api } from '../lib/api';
-import { Plus, Edit2, Trash2, Loader2, GripVertical } from 'lucide-react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-
-interface SkillCat {
-  id: number;
-  category: string;
-  items: string[];
-  displayOrder: number;
-}
-
-function SortableSkillRow({ cat, onEdit, onDelete }: { cat: SkillCat, onEdit: (e: SkillCat) => void, onDelete: (id: number) => void }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: cat.id });
-  const style = { transform: CSS.Transform.toString(transform), transition };
-
-  return (
-    <div ref={setNodeRef} style={style} className="bg-white p-4 mb-3 rounded-lg border flex items-center gap-4 hover:shadow-md">
-      <div {...attributes} {...listeners} className="cursor-grab text-gray-400 hover:text-gray-600"><GripVertical size={20} /></div>
-      <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-semibold text-gray-900">{cat.category}</h3>
-        <div className="flex flex-wrap gap-1 mt-1">
-          {cat.items?.map((item, idx) => (
-            <span key={idx} className="px-2 py-0.5 bg-brand-50 text-brand-700 text-xs rounded-full">{item}</span>
-          ))}
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <button onClick={() => onEdit(cat)} className="p-2 text-gray-500 hover:text-brand-600"><Edit2 size={16} /></button>
-        <button onClick={() => onDelete(cat.id)} className="p-2 text-gray-500 hover:text-red-600"><Trash2 size={16} /></button>
-      </div>
-    </div>
-  );
-}
+import { useState } from 'react';
+import { Edit2, Plus, Trash2 } from 'lucide-react';
+import { apiErrorMessage } from '../lib/api';
+import { useResource } from '../hooks/useResource';
+import { useToast } from '../context/ToastContext';
+import type { SkillCategory } from '../lib/types';
+import { Card, CardHeader, PageHeader } from '../components/ui/Card';
+import { Button, IconButton } from '../components/ui/Button';
+import { Field, Input, Textarea } from '../components/ui/Form';
+import { EmptyState, Spinner } from '../components/ui/Feedback';
+import { SortableList } from '../components/ui/SortableList';
+import { ConfirmDialog, Modal } from '../components/ui/Modal';
+import { AttachmentField } from '../components/attachments/AttachmentField';
+import type { AttachmentValue } from '../components/attachments/AttachmentField';
 
 export function SkillsManager() {
-  const [skills, setSkills] = useState<SkillCat[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [currentCat, setCurrentCat] = useState<Partial<SkillCat> | null>(null);
+  const { items, loading, create, update, remove, reorder } = useResource<SkillCategory>('/skills');
+  const toast = useToast();
+  const [draft, setDraft] = useState<Partial<SkillCategory> | null>(null);
+  const [itemsInput, setItemsInput] = useState('');
+  const [attachment, setAttachment] = useState<AttachmentValue>({ url: null, mediaId: null, alt: null });
+  const [saving, setSaving] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<SkillCategory | null>(null);
 
-  const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
-
-  useEffect(() => { fetchSkills(); }, []);
-
-  const fetchSkills = async () => {
-    try { setSkills((await api.get('/skills')).data); } finally { setIsLoading(false); }
+  const openCreate = () => {
+    setDraft({ category: '', items: [] });
+    setItemsInput('');
+    setAttachment({ url: null, mediaId: null, alt: null });
   };
 
-  const handleDragEnd = async (e: any) => {
-    if (e.active.id !== e.over.id) {
-      const oldI = skills.findIndex(p => p.id === e.active.id);
-      const newI = skills.findIndex(p => p.id === e.over.id);
-      const newOrder = arrayMove(skills, oldI, newI).map((p, i) => ({ ...p, displayOrder: i }));
-      setSkills(newOrder);
-      for (const p of newOrder) {
-        if (p.displayOrder !== skills.find(op => op.id === p.id)?.displayOrder) api.put(`/skills/${p.id}`, p);
+  const openEdit = (category: SkillCategory) => {
+    setDraft(category);
+    setItemsInput((category.items ?? []).join(', '));
+    setAttachment({
+      url: category.icon ?? null,
+      mediaId: category.mediaId ?? null,
+      alt: category.category,
+    });
+  };
+
+  const handleSave = async () => {
+    if (!draft?.category) {
+      toast.error('A category name is required.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload = {
+        ...draft,
+        items: itemsInput
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean),
+        icon: attachment.url,
+        mediaId: attachment.mediaId,
+      };
+      if (draft.id) {
+        await update(draft.id, payload);
+        toast.success('Skill category updated.');
+      } else {
+        await create(payload);
+        toast.success('Skill category added.');
       }
+      setDraft(null);
+    } catch (error) {
+      toast.error(apiErrorMessage(error, 'Failed to save the skill category.'));
+    } finally {
+      setSaving(false);
     }
   };
 
-  const save = async () => {
-    if (!currentCat?.category) return alert('Category is required');
-    const payload = {
-      ...currentCat,
-      items: typeof currentCat.items === 'string' ? (currentCat.items as string).split(',').map(s=>s.trim()) : currentCat.items || [],
-      displayOrder: currentCat.id ? currentCat.displayOrder : skills.length,
-    };
-    if (currentCat.id) await api.put(`/skills/${currentCat.id}`, payload);
-    else await api.post('/skills', payload);
-    setIsFormOpen(false); fetchSkills();
+  const handleDelete = async () => {
+    if (!pendingDelete) return;
+    try {
+      await remove(pendingDelete.id);
+      toast.success('Skill category removed.');
+    } catch (error) {
+      toast.error(apiErrorMessage(error, 'Failed to remove the skill category.'));
+    } finally {
+      setPendingDelete(null);
+    }
   };
 
-  if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-brand-600" /></div>;
-
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center"><h1 className="text-2xl font-bold">Skills Manager</h1><button onClick={() => {setCurrentCat({}); setIsFormOpen(true)}} className="bg-brand-600 text-white px-4 py-2 rounded-lg flex"><Plus className="w-5 h-5 mr-2" />Add Category</button></div>
-      {isFormOpen ? (
-        <div className="bg-white p-6 rounded-xl border">
-          <label className="block text-sm mb-1">Category Name</label>
-          <input className="w-full border p-2 mb-4 rounded-lg" value={currentCat?.category || ''} onChange={e => setCurrentCat(c => ({...c!, category: e.target.value}))} />
-          <label className="block text-sm mb-1">Skills (comma separated)</label>
-          <input className="w-full border p-2 mb-6 rounded-lg" value={Array.isArray(currentCat?.items) ? currentCat?.items.join(', ') : currentCat?.items || ''} onChange={e => setCurrentCat(c => ({...c!, items: e.target.value as any}))} />
-          <div className="flex justify-end gap-3"><button onClick={() => setIsFormOpen(false)} className="px-4 py-2 border rounded-lg">Cancel</button><button onClick={save} className="bg-brand-600 text-white px-4 py-2 rounded-lg">Save</button></div>
-        </div>
-      ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={skills.map(s => s.id)} strategy={verticalListSortingStrategy}>
-            <div>{skills.map(c => <SortableSkillRow key={c.id} cat={c} onEdit={c => {setCurrentCat(c); setIsFormOpen(true)}} onDelete={async id => { if(window.confirm('Delete?')){ await api.delete(`/skills/${id}`); setSkills(skills.filter(s=>s.id!==id)); } }} />)}</div>
-          </SortableContext>
-        </DndContext>
-      )}
-    </div>
+    <>
+      <PageHeader
+        title="Skills"
+        description="Skill categories with their items and optional icon."
+        actions={
+          <Button type="button" icon={<Plus size={15} />} onClick={openCreate}>
+            Add category
+          </Button>
+        }
+      />
+
+      <Card>
+        <CardHeader title="Categories" description={`${items.length} categories.`} />
+        {loading ? (
+          <Spinner label="Loading skills…" />
+        ) : (
+          <SortableList
+            items={items}
+            onReorder={(ids) => void reorder(ids)}
+            empty={
+              <EmptyState
+                title="No skill categories yet"
+                description="Group the skills the way they should appear on the site."
+              />
+            }
+            renderItem={(category) => (
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-line bg-surface">
+                  {category.icon ? (
+                    <img src={category.icon} alt={category.category} className="h-full w-full object-contain" />
+                  ) : null}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-ink">{category.category}</p>
+                  <p className="truncate text-xs text-muted">{(category.items ?? []).join(' · ')}</p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <IconButton label="Edit category" onClick={() => openEdit(category)}>
+                    <Edit2 size={15} />
+                  </IconButton>
+                  <IconButton label="Delete category" tone="danger" onClick={() => setPendingDelete(category)}>
+                    <Trash2 size={15} />
+                  </IconButton>
+                </div>
+              </div>
+            )}
+          />
+        )}
+      </Card>
+
+      <Modal
+        open={draft !== null}
+        title={draft?.id ? 'Edit category' : 'New category'}
+        onClose={() => setDraft(null)}
+        footer={
+          <>
+            <Button type="button" variant="ghost" onClick={() => setDraft(null)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleSave} loading={saving}>
+              Save category
+            </Button>
+          </>
+        }
+      >
+        {draft ? (
+          <div className="space-y-4">
+            <Field label="Category">
+              <Input
+                value={draft.category ?? ''}
+                onChange={(e) => setDraft({ ...draft, category: e.target.value })}
+              />
+            </Field>
+            <Field label="Skills" hint="Comma separated.">
+              <Textarea
+                value={itemsInput}
+                onChange={(e) => setItemsInput(e.target.value)}
+                className="min-h-20"
+              />
+            </Field>
+            <AttachmentField
+              label="Icon"
+              value={attachment}
+              onChange={setAttachment}
+              folder="portfolio/skills"
+              hint="Small square icon, e.g. 64×64."
+            />
+          </div>
+        ) : null}
+      </Modal>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete skill category"
+        message="The category and its skills will be removed from the site."
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={handleDelete}
+      />
+    </>
   );
 }
