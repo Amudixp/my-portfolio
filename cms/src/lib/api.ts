@@ -30,3 +30,19 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export function apiErrorMessage(error: unknown, fallback?: string): string {
+  if (typeof error === 'object' && error !== null && 'response' in error) {
+    const err = error as any;
+    return err.response?.data?.error || err.message || fallback || 'An error occurred';
+  }
+  if (error instanceof Error) return error.message || fallback || 'An error occurred';
+  return fallback || 'An error occurred';
+}
+
+export { API_URL };
+
+
+
+
+
