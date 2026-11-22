@@ -5,14 +5,15 @@ export const profile: ProfileData = {
   major: "Information Systems & Technology",
   university: "Institut Teknologi Bandung",
   location: "Bandung, Indonesia",
-  status: "Undergraduate Student @ Information System & Technology",
+  status: "Final-Year Student @ Information System & Technology",
   email: "amudipurba12@gmail.com",
   phone: "+62-821-1557-5545",
   github: "https://github.com/Amudixp",
   linkedin: "https://www.linkedin.com/in/amudipurba",
   gpa: "3.64 / 4.00 (128 credits)",
-  shortBio: "Third-year Information Systems & Technology student at Institut Teknologi Bandung with a focused interest in data and artificial intelligence. Possesses a well-rounded foundation built through academic coursework in technical domains and organizational experience that has sharpened collaboration, leadership, and accountability skills. Understands the full lifecycle of building a product from the ground up, from ideation to execution, and applies that systems thinking to approach data-driven problems in a structured way. Known as a fast learner who adapts quickly to new environments and tools, with a genuine curiosity to explore and understand how things work. Eager to contribute to a team where technical depth and interpersonal skills are equally valued.",
-  resume: "/assets/Amudi Purba_CV.pdf"
+  shortBio: "Final-year Information Systems and Technology undergraduate at Institut Teknologi Bandung with hands-on experience in SQL, Python, and descriptive and statistical analysis. Experienced in modeling relational databases, auditing data quality, and turning analysis into decision-ready findings, supported by industry experience translating business requirements between stakeholders and engineering teams.",
+  // /assets/* is served as immutable (vercel.json); bump ?v= whenever the PDF is replaced.
+  resume: "/assets/Amudi Purba_CV.pdf?v=2026-11-22"
 };
 
 export const education: EducationData = {
@@ -22,7 +23,11 @@ export const education: EducationData = {
   gpa: "3.64 / 4.00",
   credits: "128 credits",
   relevantCourseworks: [
+    "Data Analytics",
     "Database Modelling",
+    "Probability and Statistics",
+    "Enterprise Architecture",
+    "Information Systems and Technology Engineering",
     "Database Management",
     "Foundation of Artificial Intelligence",
     "Artificial Intelligence for Business",
@@ -35,7 +40,7 @@ export const education: EducationData = {
       id: 1,
       title: "[National] Top 15 Finalist of Hackathon by SIMKOPDES",
       year: "2026",
-      description: "Developed KopHabit, a digital transformation platform for Koperasi Desa Merah Putih driving grassroots community participation through OCR-based bookkeeping and accessible financial transparency.",
+      description: "Led product strategy for Rekop, a digital transparency platform for village cooperatives that closes trust, access, and voice gaps between cooperative managers and communities through OCR automation, public dashboards, and an AI chatbot.",
       tag: "National Hackathon"
     },
     {

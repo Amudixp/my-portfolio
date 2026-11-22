@@ -156,7 +156,7 @@ export const Hero = () => {
               textShadow: '0 2px 10px rgba(0,0,0,0.7)'
             }}
           >
-            Information Systems & Technology student at ITB specializing in AI Systems integration, full SDLC software engineering, and STLC quality assurance.
+            Final-year Information Systems & Technology student at ITB focused on SQL, Python, and statistical analysis, turning data into decision-ready findings.
           </motion.p>
 
           {/* Action CTA: GPU Accelerated Ultra-Smooth Morphing View Projects Button */}

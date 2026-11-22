@@ -2,6 +2,18 @@ import type { SkillCategory } from '../types';
 
 export const skills: SkillCategory[] = [
   {
+    category: "Data Analysis",
+    items: ["SQL (MySQL)", "Relational Data Modeling & Normalization", "Descriptive Statistics", "Data Quality Audit", "Tableau", "Excel"]
+  },
+  {
+    category: "Python & Data Tools",
+    items: ["pandas", "NumPy", "scikit-learn", "SciPy", "statsmodels", "Matplotlib", "Seaborn", "Jupyter"]
+  },
+  {
+    category: "Business",
+    items: ["Requirement Gathering", "Stakeholder Management", "User Stories", "UAT", "Agile"]
+  },
+  {
     category: "Languages",
     items: ["TypeScript", "JavaScript", "Python", "Java", "C", "PHP", "Haskell"]
   },

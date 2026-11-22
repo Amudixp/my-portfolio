@@ -48,7 +48,8 @@ const LAYERS = {
 const DESIGN_H = 900;
 const DESIGN_W = 1200;
 const CLUSTER_X = 0.5;
-const CLUSTER_Y = 0.47;
+// Keeps the logo cluster vertically centered on the five card rows.
+const CLUSTER_Y = 0.72;
 const MIN_LOGO_SCALE = 0.82;
 const CARD_WIDTH = 300;
 const GAP = 24;
@@ -73,14 +74,28 @@ const CARD_COLUMN_HALF = CARD_WIDTH / 2 + CLUSTER_CARD_CLEARANCE;
 const leftColX = (): number => ((DESIGN_W * CLUSTER_X - CARD_COLUMN_HALF) / DESIGN_W) * 100;
 const rightColX = (): number => ((DESIGN_W * CLUSTER_X + CARD_COLUMN_HALF) / DESIGN_W) * 100;
 
+// One slot per entry in `experiences`, by index, in five rows (y 24/50/76/102/128).
+// Each card sits on the side of the cluster nearest its organization's logo.
+const CARD_ROW_STEP = 26;
 const CARD_LAYOUT: CardLayout[] = [
-  { x: rightColX(), y: 76 },
-  { x: leftColX(), y: 24 },
-  { x: rightColX(), y: 24 },
-  { x: leftColX(), y: 50 },
-  { x: leftColX(), y: 76 },
-  { x: rightColX(), y: 50 },
+  { x: rightColX(), y: 24 },  // Agung Sedayu (logo top-right)
+  { x: leftColX(), y: 128 },  // Akhdani (logo bottom-left)
+  { x: leftColX(), y: 24 },   // ITB (logo top-left)
+  { x: leftColX(), y: 50 },   // ITB
+  { x: leftColX(), y: 76 },   // ITB
+  { x: rightColX(), y: 76 },  // TEC (logo right)
+  { x: rightColX(), y: 50 },  // TEC
+  { x: leftColX(), y: 102 },  // GenBI (logo far left)
+  { x: rightColX(), y: 102 }, // HMIF (logo bottom-right)
 ];
+
+// Falls back to alternating columns below the last row, so adding an entry
+// to `experiences` without a slot here never breaks the desktop layout.
+const cardSlot = (i: number): CardLayout =>
+  CARD_LAYOUT[i] ?? {
+    x: i % 2 === 0 ? rightColX() : leftColX(),
+    y: 24 + CARD_ROW_STEP * (Math.floor(CARD_LAYOUT.length / 2) + 1 + Math.floor((i - CARD_LAYOUT.length) / 2)),
+  };
 
 const MIN_DOT_ANGLE = (22 * Math.PI) / 180;
 const BOTTOM_FROM = (60 * Math.PI) / 180;
@@ -1080,7 +1095,7 @@ export const Experience = () => {
     });
 
     const cards: LayoutCard[] = experiences.map((exp, i) => {
-      const cfg = CARD_LAYOUT[i];
+      const cfg = cardSlot(i);
       const size = cardSizes[exp.id] ?? { w: CARD_WIDTH, h: 156 };
       const baseCx = (cfg.x / 100) * cw;
       const baseCy = (cfg.y / 100) * DESIGN_H + HUB_Y_OFFSET;
@@ -1362,7 +1377,7 @@ export const Experience = () => {
             })}
 
             {experiences.map((exp, i) => {
-              const cfg = CARD_LAYOUT[i];
+              const cfg = cardSlot(i);
               const isOpen = openId === exp.id;
               const off = offsets[exp.id] ?? { x: 0, y: 0 };
               return (

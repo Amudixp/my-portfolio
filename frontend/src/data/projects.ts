@@ -9,9 +9,61 @@ import enterpriseArchImg from '../assets/images/enterprise-architecture.webp';
 import sparkParkingImg from '../assets/images/spark-parking.webp';
 import simkopdesRekopImg from '../assets/images/simkopdes-rekop.webp';
 import fraudAnalysisImg from '../assets/images/fraud-analysis.webp';
+import surveyAnalysisImg from '../assets/images/survey-analysis.webp';
+import dataAuditImg from '../assets/images/data-audit.webp';
+import cellCycleImg from '../assets/images/cell-cycle-simulation.webp';
 import type { ProjectData } from '../types';
 
+// Notebooks are served from /public/assets/notebooks and rendered through nbviewer.
+const notebookUrl = (file: string) =>
+  `https://nbviewer.org/url/amudipurba.com/assets/notebooks/${file}`;
+
 export const projects: ProjectData[] = [
+  {
+    id: 12,
+    title: "Statistical Analysis of AI Usage & Online Activity Survey",
+    subtitle: "DESCRIPTIVE & INFERENTIAL STATISTICS",
+    year: "2024",
+    description: "Statistical analysis of a 1,000-respondent survey on AI usage, online activity, and payment and banking channel preferences.",
+    fullDescription: "Analyzed a 1,000-respondent survey in Python using descriptive statistics, percentiles, and frequency and proportion tables across demographic segments, supported by 10+ visualizations such as payment-method trends by age group. Applied z-tests for proportions, confidence intervals, chi-square, and Kolmogorov–Smirnov tests, finding ChatGPT adoption (81.1%) significantly above the 75% benchmark (p < 0.05).",
+    tech: ["Python", "pandas", "SciPy", "statsmodels", "Seaborn", "Hypothesis Testing"],
+    image: surveyAnalysisImg,
+    link: notebookUrl("survey-statistical-analysis.ipynb"),
+    metrics: [
+      { value: "1,000", label: "SURVEY RESPONDENTS" },
+      { value: "4", label: "STATISTICAL TEST FAMILIES" }
+    ]
+  },
+  {
+    id: 13,
+    title: "Data Quality Audit & Energy Consumption Analysis",
+    subtitle: "DATA AUDIT, CLEANING & DECISION-ORIENTED ANALYSIS",
+    year: "2026",
+    description: "End-to-end audit of an hourly building energy dataset, from data quality checks to benchmarked regression models and a documented decision log.",
+    fullDescription: "Audited a 500-row hourly building energy dataset before any modeling: detected 10% missing values in student count and 26 outliers (≈5%) in the target using the IQR method. Compared mean and median imputation and chose the median to preserve the distribution, capped outliers with winsorization instead of dropping rows, one-hot encoded day type, and ran Pearson correlation analysis. Benchmarked Linear and Huber Regression on MAE, RMSE, and R², recorded every analytical choice in a decision log, and concluded that the low R² (≈0.10) made the model an exploratory baseline rather than a basis for operational decisions.",
+    tech: ["Python", "pandas", "scikit-learn", "Data Quality Audit", "Regression", "Matplotlib"],
+    image: dataAuditImg,
+    link: notebookUrl("data-audit-decision-analysis.ipynb"),
+    metrics: [
+      { value: "10%", label: "MISSING DATA IMPUTED" },
+      { value: "2", label: "MODELS BENCHMARKED" }
+    ]
+  },
+  {
+    id: 14,
+    title: "Cell Cycle Simulation & Scenario Analysis",
+    subtitle: "COMPUTATIONAL MODELING & WHAT-IF COMPARISON",
+    year: "2026",
+    description: "Python simulation of cell-cycle phase durations and population growth, comparing a normal cycle against a checkpoint-delay scenario.",
+    fullDescription: "Built a Python model of the cell cycle (G1, S, G2, M) using parameters seeded from a student ID. Computed each phase's share of a 26-hour cycle, simulated population growth over a 72-hour observation window, and ran a what-if comparison against an M-phase checkpoint delay. The scenario showed the M-phase share nearly doubling (3.9% → 7.4%) and growth lagging by one hour per cycle, with results presented in comparison tables and charts.",
+    tech: ["Python", "pandas", "Matplotlib", "Simulation", "Scenario Analysis"],
+    image: cellCycleImg,
+    link: notebookUrl("cell-cycle-simulation.ipynb"),
+    metrics: [
+      { value: "4", label: "PHASES MODELED" },
+      { value: "2", label: "SCENARIOS COMPARED" }
+    ]
+  },
   {
     id: 1,
     title: "Freelance: KJPP Consultant Ecosystem Application",
@@ -31,9 +83,9 @@ export const projects: ProjectData[] = [
     title: "SIMKOPDES Hackathon- Rekop: Transparansi Koperasi Desa",
     subtitle: "DIGITAL TRANSFORMATION & FINANCIAL TRANSPARENCY",
     year: "2026",
-    description: "Digital transformation platform for Koperasi Desa Merah Putih enabling transparent financial reporting, AI chatbot assistance, and community engagement.",
-    fullDescription: "Developed Rekop (SIMKOPDES) as a Top 15 Finalist project in the National Hackathon by SIMKOPDES. The platform empowers village cooperatives (Koperasi Desa Merah Putih) with transparent financial reporting, interactive dashboards, community feedback channels, and AI chatbot assistance for accessible digital bookkeeping.",
-    tech: ["TypeScript", "React", "AI Integration", "Financial Analytics", "Web Development"],
+    description: "Digital transparency platform for village cooperatives (Koperasi Desa Merah Putih) with OCR automation, public dashboards, and an AI chatbot.",
+    fullDescription: "Led product strategy for Rekop, a Top 15 Finalist project in the National Hackathon by SIMKOPDES. Rekop is a digital transparency platform for village cooperatives that closes trust, access, and voice gaps between cooperative managers and communities through OCR automation, public dashboards, and an AI chatbot.",
+    tech: ["Product Strategy", "TypeScript", "React", "OCR", "AI Chatbot", "Public Dashboard"],
     image: simkopdesRekopImg,
     link: "https://github.com/usernamedarren/rekop",
     metrics: [
@@ -103,32 +155,32 @@ export const projects: ProjectData[] = [
   },
   {
     id: 7,
-    title: "Enterprise Architecture Analysis",
-    subtitle: "TOGAF FRAMEWORK OPERATIONAL READINESS",
+    title: "Toko Kopi Manusia: Enterprise Architecture Roadmap",
+    subtitle: "TOGAF AS-IS TO TO-BE ARCHITECTURE",
     year: "2025",
-    description: "Enterprise architecture evaluation for 'Toko Kopi Manusia' using TOGAF framework across business, data, app, and tech domains.",
-    fullDescription: "Conducted enterprise architecture analysis for “Toko Kopi Manusia” using the TOGAF framework to evaluate operational readiness across business, data, application, and technology domains. Provided strategic technology recommendations including POS systems, Power BI integration, and technology management concepts to improve operational efficiency and business responsiveness.",
-    tech: ["Enterprise Architecture", "TOGAF", "Power BI", "POS Systems"],
+    description: "As-Is to To-Be enterprise architecture roadmap for 'Toko Kopi Manusia' across five TOGAF domains to support a business expansion strategy.",
+    fullDescription: "Assessed As-Is to To-Be architecture for “Toko Kopi Manusia” across five TOGAF domains, including Data and Application architecture, using ArchiMate to support a business expansion strategy. Consolidated 8 application modules into one integrated digital ecosystem while maintaining traceability between business requirements, system design, and data protection controls (ISO 27001, NIST, UU PDP).",
+    tech: ["Enterprise Architecture", "TOGAF", "ArchiMate", "ISO 27001", "Data Architecture"],
     image: enterpriseArchImg,
     link: "https://drive.google.com/drive/folders/1sZCeCJyEFIIJU1564NZDdix00Q2ug26J?usp=sharing",
     metrics: [
-      { value: "4", label: "DOMAINS EVALUATED" },
-      { value: "TOGAF", label: "FRAMEWORK" }
+      { value: "5", label: "TOGAF DOMAINS" },
+      { value: "8", label: "APP MODULES CONSOLIDATED" }
     ]
   },
   {
     id: 8,
-    title: "Whoosh Database Analysis",
-    subtitle: "RELATIONAL DATABASE SYSTEM DESIGN",
+    title: "Whoosh: Relational Database Design & SQL Analysis for High-Speed Rail Ticketing",
+    subtitle: "DATABASE NORMALIZATION & SQL ANALYSIS",
     year: "2024",
-    description: "In-depth relational database modeling and entity relationship analysis for the Whoosh high-speed railway system.",
-    fullDescription: "Conducted database analysis on the Whoosh railway system to understand data structures, entity relationships, and query-oriented database design. Strengthened practical understanding of database modeling, relational data design, and structured data management workflows.",
-    tech: ["PostgreSQL", "MySQL", "RDBMS", "SQL", "Database Design"],
+    description: "Normalized ticket booking database and business-question SQL analysis for the Whoosh high-speed rail system.",
+    fullDescription: "Normalized a 16-relation ticket booking database (users, passengers, orders, seats, routes, trip history, payments) and revised the relational model after normalization in a team of four. Wrote and executed MySQL queries using multi-table JOINs, UNION/INTERSECT, CASE, and COALESCE to answer business questions on passengers, payment methods, cancellations, and seats by route and class.",
+    tech: ["MySQL", "SQL", "Normalization", "Relational Modeling", "Database Design"],
     image: databaseImg,
     link: "https://github.com/Amudixp",
     metrics: [
-      { value: "RDBMS", label: "RELATIONAL MODEL" },
-      { value: "SQL", label: "QUERY DESIGN" }
+      { value: "16", label: "RELATIONS NORMALIZED" },
+      { value: "4-Member", label: "TEAM" }
     ]
   },
   {

@@ -197,7 +197,7 @@ export const About = () => {
             
             <StatCard label="CURRENT CGPA" value="3.64 / 4.00" subtext="128 Academic Credits" valueColor="var(--accent-green)" isLight={isLight} />
             <StatCard label="INSTITUTION" value="ITB" subtext="Class of 2027 (Expected)" valueColor="var(--accent-green)" isLight={isLight} />
-            <StatCard label="CORE FOCUS" value="AI & Engineering" subtext="AI Systems, SDLC & STLC Focus" valueColor="var(--accent-green)" isLight={isLight} />
+            <StatCard label="CORE FOCUS" value="Data & Analytics" subtext="SQL, Python & Statistical Analysis" valueColor="var(--accent-green)" isLight={isLight} />
             <StatCard label="LOCATION" value="Bandung, ID" subtext="Open to Remote & On-site" valueColor="var(--accent-green)" isLight={isLight} />
 
           </motion.div>
